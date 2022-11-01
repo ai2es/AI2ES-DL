@@ -4,6 +4,10 @@ import tensorflow as tf
 import numpy as np
 from keras.layers.preprocessing import image_preprocessing as image_ops
 
+"""
+data augmentations functions must require only an input dataset and return only a 
+tf.data.Dataset object representing the augmented dataset
+"""
 
 def fftfreqnd(h, w):
     """ Get bin values for discrete fourier transform of size (h, w, z)

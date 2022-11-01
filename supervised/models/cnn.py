@@ -8,6 +8,11 @@ from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input,
 from tensorflow.keras.applications import EfficientNetB0, ResNet50V2, VGG16, MobileNetV3Small
 from time import time
 
+"""
+model building functions should accept only float, int, or string arguments and must return only a compiled keras model
+"""
+
+
 HARDSWISH = lambda x: x * tf.nn.relu6(x + 3) / 6
 MISH = lambda x: x * tf.nn.tanh(tf.nn.softplus(x))
 

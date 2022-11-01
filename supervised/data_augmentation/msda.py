@@ -2,6 +2,11 @@ import tensorflow as tf
 import numpy as np
 from supervised.data_augmentation.ssda import add_gaussian_noise, custom_rand_augment, get_spectrum, fftfreqnd
 
+"""
+data augmentations functions must require only an input dataset and return only a 
+tf.data.Dataset object representing the augmented dataset
+"""
+
 
 def blended_dset(train_ds, n_blended=2, prob=None, std=.1, **kwargs):
     """

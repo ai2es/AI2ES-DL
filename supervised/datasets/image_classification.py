@@ -1,6 +1,12 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
+"""
+data loading functions must only return a dictionary of this form:
+{'train': train_dset, 'val': val_dset, 'test': test_dset}
+where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
+"""
+
 
 def cats_dogs(batch_size=16, image_size=(128, 128, 3), cache=False, prefetch=4, **kwargs):
     setattr(tfds.image_classification.cats_vs_dogs, '_URL',
@@ -95,4 +101,4 @@ def citrus_leaves(batch_size=16, image_size=(128, 128, 3), cache=False, prefetch
     ds = ds.repeat()
     ds = ds.prefetch(prefetch)
 
-    return ds, plain, plain
+    return {'train': ds, 'val': plain, 'test': plain}
