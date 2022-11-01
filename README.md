@@ -8,7 +8,7 @@ using your own models: (see supervised/models/cnn.py)
 1. network functions should only take int, float, or string typed arguments
 2. network functions must return only a compiled keras model
 
-using your own datasets: (see supervised/datsets/image_classification.py)
+using your own datasets: (see supervised/datasets/image_classification.py)
 1. dataset functions should return only an unbatched finite tf.data.Dataset object
 
 using your own data augmentation strategies: (see supervised/data_augmentation/ssda.py)
