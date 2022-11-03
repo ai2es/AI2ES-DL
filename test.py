@@ -2,7 +2,7 @@ from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_hallucinetv4_upcycle_plus_plus
 
-from supervised.datasets.image_classification import deep_weeds, cats_dogs
+from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset
 from supervised.data_augmentation.msda import mixup_dset
 from supervised.data_augmentation.ssda import add_gaussian_noise_dset
 """
@@ -41,10 +41,10 @@ network_params must include:
     'hyperband': bool
 """
 network_params = {
-    'network_fn': build_hallucinetv4_upcycle_plus_plus,
+    'network_fn': build_EfficientNetB0,
     'network_args': {
-        'lrate': 1e-3,
-        'n_classes': 2,
+        'lrate': 1e-4,
+        'n_classes': 3,
         'iterations': 8,
         'conv_filters': '[16]',
         'conv_size': '[3]',
@@ -69,9 +69,9 @@ experiment_params must include:
 """
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 100,
-    'validation_steps': 100,
-    'patience': 1,
+    'steps_per_epoch': 512,
+    'validation_steps': 128,
+    'patience': 4,
     'min_delta': 0.0,
     'epochs': 20,
     'nogo': False,
@@ -87,14 +87,15 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': cats_dogs,
+    'dset_fn': dot_dataset,
     'dset_args': {
-        'image_size': (128, 128, 3)
+        'image_size': (128, 128),
+        'path': '../Semi-Supervised/data/'
     },
-    'cache': True,
+    'cache': False,
     'cache_to_lscratch': False,
-    'batch': 4,
-    'prefetch': 1,
+    'batch': 8,
+    'prefetch': 2,
     'shuffle': True,
     'augs': (mixup_dset,)
 }

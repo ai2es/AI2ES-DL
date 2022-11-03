@@ -134,3 +134,55 @@ def get_cv_rotation(dirlist, rotation=0, k=5, train_fraction=1):
     train = pd.concat([shards[i] for i in range(k) if i != rotation])
 
     return train, val, test
+
+
+def to_dataset(df, image_size=(256, 256), class_mode='sparse', **kwargs):
+    if df is None:
+        return None
+
+    def preprocess_image(item, target_shape, center=True):
+        """
+        Load in image from filename and resize to target shape.
+        """
+
+        filename, label = item[0], item[1]
+
+        image_bytes = tf.io.read_file(filename)
+        image = tf.io.decode_image(image_bytes)  # this line does not work kinda
+        image = tf.image.convert_image_dtype(image, tf.float32)
+        image = tf.image.resize(image, target_shape)
+        if center:
+            image = image - tf.reduce_mean(image)
+
+        if class_mode == 'categorical':
+            label = tf.one_hot(tf.strings.to_number(label, tf.dtypes.int32), 3, dtype=tf.float32)
+        elif class_mode == 'sparse':
+            label = tf.strings.to_number(label, tf.dtypes.int32)
+        else:
+            raise ValueError('improper class mode')
+
+        return image, label
+
+    try:
+        df['class'] = df['class'].astype(int).astype(str)
+    except KeyError as e:
+        print('setting class manually to 0...')
+        df['class'] = ['0' for i in range(len(df))]
+    except ValueError as e:
+        print('setting class manually to 0...')
+        df['class'] = ['0' for i in range(len(df))]
+    slices = df.to_numpy()
+    out_type = tf.int32 if class_mode == 'sparse' else tf.float32
+
+    ds = tf.data.Dataset.from_tensor_slices(
+        slices
+    )
+
+    ds = ds.map(lambda x:
+                tf.py_function(func=preprocess_image,
+                               inp=[x, image_size],
+                               Tout=(tf.float32, out_type)),
+                num_parallel_calls=tf.data.AUTOTUNE)
+
+    return ds
+

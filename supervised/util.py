@@ -49,7 +49,7 @@ def prep_gpu(cpus_per_task, gpus_per_task=0):
     sleep(randint(0, 60 * 5))
     usage = [pynvml.nvmlDeviceGetMemoryInfo(gpu).used / pynvml.nvmlDeviceGetMemoryInfo(gpu).total for gpu in gpus]
     # sort the gpus by their available memory and filter out all gpus with more than 10% used
-    avail = [i for i, v in sorted(list(enumerate(usage)), key=lambda k: k[-1]) if v <= .1]
+    avail = [i for i, v in sorted(list(enumerate(usage)), key=lambda k: k[-1]) if v <= 1]
     # if we cannot satisfy the requested number of gpus this is an error
     if gpus_per_task > len(gpus):
         raise ValueError("too many gpus requested for this machine")
@@ -388,6 +388,8 @@ class Experiment:
         train_dset, val_dset, test_dset = dset_dict['train'], dset_dict['val'], dset_dict['test']
 
         def postprocess_dset(ds):
+            ds = ds.repeat()
+
             if self.dataset_params['batch'] > 1:
                 ds = ds.batch(self.dataset_params['batch'])
 
@@ -399,8 +401,6 @@ class Experiment:
 
             if self.dataset_params['shuffle']:
                 ds = ds.shuffle(self.dataset_params['shuffle'], self.params['seed'], True)
-
-            ds = ds.repeat()
 
             ds = ds.prefetch(self.dataset_params['prefetch'])
 
@@ -486,7 +486,7 @@ class Results:
         metrics = [key for key in self.model_data.history]
         patience = self.config.experiment_params['patience']
         epochs = len(self.model_data.history['loss'])
-        performance_at_patience = {key: self.model_data.history[key][epochs - patience]
+        performance_at_patience = {key: self.model_data.history[key][epochs - patience - 1]
                                    for key in metrics}
 
         index = 'n/a' if self.experiment.index is None else self.experiment.index
