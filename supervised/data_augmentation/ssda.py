@@ -9,6 +9,7 @@ data augmentations functions must require only an input dataset and return only 
 tf.data.Dataset object representing the augmented dataset
 """
 
+
 def fftfreqnd(h, w):
     """ Get bin values for discrete fourier transform of size (h, w, z)
     :param h: Required, first dimension size

@@ -43,7 +43,7 @@ def cats_dogs(batch_size=16, image_size=(128, 128, 3), cache=False, prefetch=4, 
         lambda x, y: tf.py_function(preprocess_image, inp=[x, y, True], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
 
-    return {'train': ds, 'val': val, 'test': test}
+    return {'train': ds, 'val': val, 'test': test, 'class_names': ['cats', 'dogs']}
 
 
 def deep_weeds(image_size=(128, 128, 3), center=True, **kwargs):
@@ -77,7 +77,8 @@ def deep_weeds(image_size=(128, 128, 3), center=True, **kwargs):
         lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
 
-    return {'train': ds, 'val': val, 'test': test}
+    return {'train': ds, 'val': val, 'test': test, 'class_names': ['chinee', 'lantana', 'parkinsonia', 'parenthenium',
+                                                                   'prickly', 'rubber', 'siam', 'snake', 'none']}
 
 
 def citrus_leaves(image_size=(128, 128, 3), **kwargs):
@@ -111,7 +112,7 @@ def citrus_leaves(image_size=(128, 128, 3), **kwargs):
         lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
 
-    return {'train': ds, 'val': val, 'test': test}
+    return {'train': ds, 'val': val, 'test': test, 'class_names': ['black spot', 'canker', 'greening', 'healthy']}
 
 
 def dot_dataset(path, image_size=(256, 256, 3)):
@@ -132,4 +133,4 @@ def dot_dataset(path, image_size=(256, 256, 3)):
     test = to_dataset(test, class_mode='categorical', image_size=image_size)
     ds = to_dataset(ds, class_mode='categorical', image_size=image_size)
 
-    return {'train': ds, 'val': val, 'test': test}
+    return {'train': ds, 'val': val, 'test': test, 'class_names': ['dry', 'snow', 'wet']}

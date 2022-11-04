@@ -42,7 +42,7 @@ class ModelData:
 
     def get_model(self):
         # return the keras model
-        model = self.network_fn(**self.network_params)
+        model = self.network_fn(**self.network_params['network_args'])
         model.set_weights(self.weights)
 
         return model

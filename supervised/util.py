@@ -34,7 +34,7 @@ class Config:
         self.experiment_params = obj.experiment_params
 
 
-def prep_gpu(cpus_per_task, gpus_per_task=0):
+def prep_gpu(cpus_per_task, gpus_per_task=0, wait=True):
     """prepare the GPU for tensorflow computation"""
     # initialize the nvidia management library
     pynvml.nvmlInit()
@@ -46,10 +46,11 @@ def prep_gpu(cpus_per_task, gpus_per_task=0):
     # -1 means "use every gpu"
     gpus_per_task = gpus_per_task if gpus_per_task > -1 else len(gpus)
     # get the fraction of used memory for each gpu
-    sleep(randint(0, 60 * 5))
+    if wait:
+        sleep(randint(0, 60 * 5))
     usage = [pynvml.nvmlDeviceGetMemoryInfo(gpu).used / pynvml.nvmlDeviceGetMemoryInfo(gpu).total for gpu in gpus]
     # sort the gpus by their available memory and filter out all gpus with more than 10% used
-    avail = [i for i, v in sorted(list(enumerate(usage)), key=lambda k: k[-1]) if v <= 1]
+    avail = [i for i, v in sorted(list(enumerate(usage)), key=lambda k: k[-1], reverse=False) if v <= 1]
     # if we cannot satisfy the requested number of gpus this is an error
     if gpus_per_task > len(gpus):
         raise ValueError("too many gpus requested for this machine")
@@ -365,11 +366,15 @@ class Experiment:
         4. fit the model
         5. save the data
         """
+        print(dict_to_string(self.hardware_params))
+        print(dict_to_string(self.params))
+        print(dict_to_string(self.network_params))
+        print(dict_to_string(self.dataset_params))
         # set seed
         tf.random.set_seed(self.params['seed'])
         numpy.random.seed(self.params['seed'])
 
-        prep_gpu(self.hardware_params['n_cpu'], self.hardware_params['n_gpu'])
+        prep_gpu(self.hardware_params['n_cpu'], self.hardware_params['n_gpu'], True)
 
         network_fn = self.network_params['network_fn']
         network_args = self.network_params['network_args']
