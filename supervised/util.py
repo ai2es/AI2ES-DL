@@ -374,7 +374,7 @@ class Experiment:
         tf.random.set_seed(self.params['seed'])
         numpy.random.seed(self.params['seed'])
 
-        prep_gpu(self.hardware_params['n_cpu'], self.hardware_params['n_gpu'], True)
+        prep_gpu(self.hardware_params['n_cpu'], self.hardware_params['n_gpu'], False)
 
         network_fn = self.network_params['network_fn']
         network_args = self.network_params['network_args']

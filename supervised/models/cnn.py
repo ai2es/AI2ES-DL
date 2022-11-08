@@ -135,13 +135,13 @@ def build_camnet(conv_filters,
             z = MaxPooling2D(2, 2, 'same')(z)
             z = Concatenate()([inv(e(z)) for e in exc])
             z = Conv2D(filters=output_dim // 2, kernel_size=1, activation=None, **conv_params)(z)
-            z = BatchNormalization()(z)
             z = activation(z)
+            z = BatchNormalization()(z)
             z0 = Concatenate()([e(inp) for e in exc] + [inp])
             z0 = Conv2D(filters=output_dim // 2, kernel_size=1, activation=None, **conv_params)(z0)
-            z0 = BatchNormalization()(z0)
             z0 = activation(z0)
-            z = Concatenate(name=f"chkpt_{time()}")([z0, z])
+            z = Concatenate()([z0, z])
+            z = BatchNormalization(name=f"chkpt_{time()}")(z)
             return z
 
         prev_layers = [thrifty_imb(x, conv_filters[block])]
@@ -239,8 +239,7 @@ def build_camnetv2(conv_filters,
             z0 = Concatenate()([e(inp) for e in exc])
             z = Concatenate()([z0, z, tf.reduce_max(x, axis=-1, keepdims=True),
                                tf.reduce_min(x, axis=-1, keepdims=True)])
-            z = BatchNormalization()(z)
-            z = Lambda(lambda i: activation(i), name=f"chkpt_{time()}")(z)
+            z = BatchNormalization(name=f"chkpt_{time()}")(z)
             return z
 
         x = Concatenate(axis=-1)([x, tf.reduce_max(x, axis=-1, keepdims=True),
@@ -264,10 +263,183 @@ def build_camnetv2(conv_filters,
     )(x)
 
     x = Lambda(lambda z: tf.reduce_sum(z[:, :, :, :-1], axis=(1, 2)))(x)
+    x = Add()([x, y])
+
+    outputs = tf.nn.softmax(x)
+    # want to re-normalize without destroying the gradient
+    # outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
+    # outputs shape is (batch, n_classes)
+
+    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'thrifty_model_{"%02d" % time()}')
+
+    model.compile(loss=loss,
+                  optimizer=opt,
+                  metrics=[accuracy])
+
+    return model
+
+
+def build_camnet_reordered(conv_filters,
+                           conv_size,
+                           dense_layers,
+                           learning_rate,
+                           image_size,
+                           iterations=24,
+                           loss='categorical_crossentropy',
+                           l1=None, l2=None,
+                           activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                           n_classes=10,
+                           skips=2,
+                           **kwargs):
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    inputs = Input(image_size)
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    x = inputs
+
+    x = Lambda(lambda z: tf.pad(z, ((0, 0), (0, 0), (0, 0), (0, conv_filters[0] - z.shape[-1]))))(x)
+
+    for block in range(len(conv_filters)):
+        thrifty_exp = Conv2D(filters=conv_filters[block], kernel_size=1, activation=None, **conv_params)
+
+        thrifty_convs = [
+            Conv2D(conv_filters[block], kernel_size=3, activation=activation, **conv_params),
+            Conv2D(conv_filters[block], kernel_size=3, activation=None, **conv_params)
+        ]
+
+        thrifty_inv3 = UpSampling2D(2)
+
+        def thrifty_imb(z, output_dim):
+            exp, exc, inv = thrifty_exp, thrifty_convs, thrifty_inv3
+            inp = z
+            z = MaxPooling2D(2, 2, 'same')(z)
+            z = Concatenate()([inv(e(z)) for e in exc])
+            z = Conv2D(filters=output_dim // 2, kernel_size=1, activation=None, **conv_params)(z)
+            z0 = Concatenate()([e(inp) for e in exc] + [inp])
+            z0 = Conv2D(filters=output_dim // 2, kernel_size=1, activation=None, **conv_params)(z0)
+            z = BatchNormalization()(z)
+            z = activation(z)
+            z = Concatenate(name=f"chkpt_{time()}")([z0, z])
+            return z
+
+        prev_layers = [thrifty_imb(x, conv_filters[block])]
+        for i in range(iterations):
+            x = thrifty_imb(x, conv_filters[block])
+            prev_layers.append(x)
+            x = Add()(prev_layers[-skips:])
+            x = BatchNormalization()(x)
+        x = Add()(prev_layers)
+    # this dense operation is over an input tensor of size (batch, width, height, channels)
+    # semantic segmentation output with extra (irrelevant) channel
+    x = Dense(n_classes + 1, activation='softmax', use_bias=False)(x)
+    # reduce sum over width / height
+    y = Lambda(
+        lambda z: tf.reduce_sum(
+            tf.stack([z[:, :, :, -1] / (n_classes * 2) for i in range(n_classes)], -1), axis=(1, 2)
+        )
+    )(x)
+
+    x = Lambda(lambda z: tf.reduce_sum(z[:, :, :, :-1], axis=(1, 2)))(x)
     x = Add()([x, y, tf.ones_like(x) * (2 ** (-10))])
     # want to re-normalize without destroying the gradient
     outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
     # outputs shape is (batch, n_classes)
+
+    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'thrifty_model_{"%02d" % time()}')
+
+    model.compile(loss=loss,
+                  optimizer=opt,
+                  metrics=[accuracy])
+
+    return model
+
+
+def build_basic_cnn(conv_filters,
+                           conv_size,
+                           dense_layers,
+                           learning_rate,
+                           image_size,
+                           iterations=24,
+                           loss='categorical_crossentropy',
+                           l1=None, l2=None,
+                           activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                           n_classes=10,
+                           skips=2,
+                           **kwargs):
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    inputs = Input(image_size)
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    x = inputs
+
+    for block in range(len(conv_filters)):
+
+        def basic_cnn_block(z):
+            inp = z
+            z = Conv2D(conv_filters[block], kernel_size=3, activation=None, **conv_params)(z)
+            z = Conv2D(conv_filters[block]*2, kernel_size=5, activation=None, **conv_params)(z)
+            z = BatchNormalization()(z)
+            z = activation(z)
+            z = MaxPooling2D(2, 2)(z)
+            z = Concatenate()([z, MaxPooling2D(2, 2)(inp)])
+            return z
+
+        x = basic_cnn_block(x)
+
+    # this dense operation is over an input tensor of size (batch, width, height, channels)
+    # semantic segmentation output with extra (irrelevant) channel
+    x = GlobalMaxPooling2D()(x)
+
+    for units in dense_layers:
+        x = Dense(units, activation=activation, use_bias=False)(x)
+
+    outputs = Dense(n_classes, activation='softmax', use_bias=False)(x)
 
     accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
 

@@ -1,9 +1,10 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
-from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet
+from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
+    build_camnet_reordered
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
-from supervised.data_augmentation.msda import mixup_dset
+from supervised.data_augmentation.msda import mixup_dset, blended_dset
 from supervised.data_augmentation.ssda import add_gaussian_noise_dset, custom_rand_augment_dset
 """
 hardware_params must include:
@@ -18,10 +19,10 @@ hardware_params must include:
 """
 hardware_params = {
     'name': 'G1',
-    'n_gpu': 1,
+    'n_gpu': 4,
     'n_cpu': 12,
     'partition': 'ai2es',
-    'nodelist': ['c732', 'c731'],
+    'nodelist': ['c732', 'c733'],
     'time': '48:00:00',
     'memory': 8196,
     # The %04a is translated into a 4-digit number that encodes the SLURM_ARRAY_TASK_ID
@@ -41,15 +42,15 @@ network_params must include:
     'hyperband': bool
 """
 network_params = {
-    'network_fn': build_camnet,
+    'network_fn': build_camnet_reordered,
     'network_args': {
-        'lrate': 1e-4,
-        'n_classes': 4,
-        'iterations': 6,
-        'conv_filters': '[32]',
+        'lrate': 5e-4,
+        'n_classes': 3,
+        'iterations': 8,
+        'conv_filters': '[48]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
-        'learning_rate': 1e-4,
+        'learning_rate': 5e-4,
         'image_size': (256, 256, 3),
         'l1': None,
         'l2': None,
@@ -71,7 +72,7 @@ experiment_params = {
     'seed': 42,
     'steps_per_epoch': 512,
     'validation_steps': 128,
-    'patience': 6,
+    'patience': 32,
     'min_delta': 0.0,
     'epochs': 512,
     'nogo': False,
@@ -87,14 +88,14 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': citrus_leaves,
+    'dset_fn': dot_dataset,
     'dset_args': {
         'image_size': (256, 256),
-        'path': '../data/'
+        'path': '../Semi-supervised/data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 8,
+    'batch': 24,
     'prefetch': 4,
     'shuffle': True,
     'augs': [custom_rand_augment_dset]
@@ -107,6 +108,6 @@ if __name__ == "__main__":
     exp = Experiment(config)
 
     print(exp.params)
-    exp.run_array(0)
+    # exp.run_array(0)
 
     exp.enqueue()
