@@ -70,7 +70,7 @@ def deep_weeds(image_size=(128, 128, 3), center=True, **kwargs):
         num_parallel_calls=tf.data.AUTOTUNE)
 
     val = val.map(
-        lambda x, y: tf.py_function(preprocess_image, inp=[x, y, True], Tout=(tf.float32, tf.float32)),
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
 
     test = test.map(
