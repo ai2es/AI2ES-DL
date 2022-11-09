@@ -19,7 +19,7 @@ hardware_params must include:
 """
 hardware_params = {
     'name': 'G1',
-    'n_gpu': 4,
+    'n_gpu': 1,
     'n_cpu': 12,
     'partition': 'ai2es',
     'nodelist': ['c732', 'c733'],
@@ -45,13 +45,13 @@ network_params = {
     'network_fn': build_camnet_reordered,
     'network_args': {
         'lrate': 5e-4,
-        'n_classes': 3,
-        'iterations': 8,
+        'n_classes': 9,
+        'iterations': 6,
         'conv_filters': '[48]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': 5e-4,
-        'image_size': (256, 256, 3),
+        'image_size': (128, 128, 3),
         'l1': None,
         'l2': None,
     },
@@ -88,14 +88,14 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': dot_dataset,
+    'dset_fn': deep_weeds,
     'dset_args': {
-        'image_size': (256, 256),
+        'image_size': (128, 128),
         'path': '../Semi-supervised/data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 24,
+    'batch': 4,
     'prefetch': 4,
     'shuffle': True,
     'augs': [custom_rand_augment_dset]
@@ -108,6 +108,6 @@ if __name__ == "__main__":
     exp = Experiment(config)
 
     print(exp.params)
-    # exp.run_array(0)
+    exp.run_array(0)
 
     exp.enqueue()
