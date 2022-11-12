@@ -1,7 +1,7 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reordered
+    build_camnet_reordered, build_focal_modulator, build_focal_camnet
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from supervised.data_augmentation.msda import mixup_dset, blended_dset
@@ -42,16 +42,16 @@ network_params must include:
     'hyperband': bool
 """
 network_params = {
-    'network_fn': build_camnet_reordered,
+    'network_fn': build_focal_camnet,
     'network_args': {
         'lrate': 5e-4,
-        'n_classes': 9,
-        'iterations': 6,
+        'n_classes': 3,
+        'iterations': 2,
         'conv_filters': '[48]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': 5e-4,
-        'image_size': (128, 128, 3),
+        'image_size': (256, 256, 3),
         'l1': None,
         'l2': None,
     },
@@ -72,7 +72,7 @@ experiment_params = {
     'seed': 42,
     'steps_per_epoch': 512,
     'validation_steps': 128,
-    'patience': 32,
+    'patience': 10,
     'min_delta': 0.0,
     'epochs': 512,
     'nogo': False,
@@ -88,9 +88,9 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': deep_weeds,
+    'dset_fn': dot_dataset,
     'dset_args': {
-        'image_size': (128, 128),
+        'image_size': (256, 256),
         'path': '../Semi-supervised/data/'
     },
     'cache': False,

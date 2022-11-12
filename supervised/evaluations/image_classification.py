@@ -149,16 +149,18 @@ def get_mask(model, image):
     new_outputs = []
     d = -1
     for i, layer in enumerate(model.layers[::-1]):
-        if 'dense' in layer.name:
+        if 'cam' in layer.name:
             d = -i - 1
             new_outputs.append(layer.output)
             break
     else:
-        raise ValueError('dense layer not found')
+        raise ValueError('cam layer not found')
 
     for i, layer in enumerate(model.layers):
         try:
             if 'chkpt' in layer.name:
+                pass
+                print('chkpt')
                 new_outputs.append(model.layers[d](layer.output))
         except Exception as e:
             print(e)
@@ -205,6 +207,10 @@ def show_mask(dset, num_images, model, class_names, fname=''):
     for x, y in iter(dset):
         imgs.append(x)
         output, probs = get_mask(model, x)
+        print(output.shape)
+        if len(output.shape) < 4:
+            output = np.expand_dims(output, 0)
+            probs = np.expand_dims(probs, 0)
         values.append(probs)
         masks.append(output[:, :, :, :-1])
         none.append(output[:, :, :, -1])
@@ -212,7 +218,7 @@ def show_mask(dset, num_images, model, class_names, fname=''):
         if num_images <= 0:
             break
 
-    print([mask.shape for mask in masks])
+    # print([mask.shape for mask in masks])
 
     for i, img in enumerate(none):
         ima = imgs[i]
@@ -220,10 +226,11 @@ def show_mask(dset, num_images, model, class_names, fname=''):
         ima = ima - np.max(np.min(ima), 0)
         ima = (ima / np.max(ima)) * 255
         ima = np.concatenate([ima for i in range(len(values[i]))], 1)
-
+        print([mask.shape for mask in masks])
         im = masks[i][0]
 
         img = np.float32(img[0])
+        print(im.shape)
         img = np.stack([img for i in range(im.shape[-1])], -1)
 
         im = tf.nn.relu(im - (img / len(class_names)))

@@ -10,8 +10,8 @@
 #SBATCH --mail-user=jay.c.rothenberger@ou.edu
 #SBATCH --mail-type=ALL
 #SBATCH --chdir=/scratch/jroth/AI2ES-DL/
-#SBATCH --nodelist=c732,c731
+#SBATCH --nodelist=c732,c733
 #SBATCH --array=[0]
 . /home/fagg/tf_setup.sh
 conda activate tf
-python run.py --pkl experiments/experiment-16675944129479291.pkl --lscratch $LSCRATCH --id $SLURM_ARRAY_TASK_ID
+python run.py --pkl experiments/experiment-16682420314429207.pkl --lscratch $LSCRATCH --id $SLURM_ARRAY_TASK_ID
