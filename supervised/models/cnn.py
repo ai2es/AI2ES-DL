@@ -24,6 +24,7 @@ def focal_module(units, focal_depth):
     :param focal_depth: number of convolutional layers in the hierarchal contextualzation
     :return: a keras layer
     """
+
     def depthwise_stack(x):
         outputs = []
         for i in range(focal_depth):
@@ -58,7 +59,7 @@ def focal_module(units, focal_depth):
     return module
 
 
-def custom_focal_module(units, focal_depth):
+def custom_focal_module(input_shape, units, focal_depth):
     """
     focal modulation block inspired by https://arxiv.org/pdf/2203.11926.pdf
     except in this version I make whatever changes I want to
@@ -67,9 +68,11 @@ def custom_focal_module(units, focal_depth):
     :param focal_depth: number of convolutional layers in the hierarchal contextualzation
     :return: a keras layer
     """
+
     def depthwise_stack(x):
         outputs = []
         for i in range(focal_depth):
+            x = Conv2D(units, 1)(x)
             x = DepthwiseConv2D(kernel_size=3, activation=HARDSWISH, padding='same')(x)
             x = BatchNormalization()(x)
             outputs.append(x)
@@ -96,7 +99,10 @@ def custom_focal_module(units, focal_depth):
 
         return Multiply(name=f"chkpt_{time()}")([x, q])
 
-    return module
+    inputs = Input(input_shape)
+    outputs = module(inputs)
+
+    return tf.keras.models.Model(inputs=[inputs], outputs=[outputs])
 
 
 def build_focal_modulator(image_size, n_classes, e_dim=24, learning_rate=1e-3, blocks=5, depth=3,
@@ -110,7 +116,7 @@ def build_focal_modulator(image_size, n_classes, e_dim=24, learning_rate=1e-3, b
     x = Conv2D(e_dim, kernel_size=4, strides=4)(x)
     for i in range(blocks):
         skip = x
-        x = focal_module(24 * (i + 1), depth)(x)
+        x = focal_module(x.shape[1:], 24 * (i + 1), depth)(x)
         skip = Conv2D(x.shape[-1], 1)(skip)
         x = Add()([x, skip])
         x = MaxPooling2D(2, 2)(x)
@@ -172,7 +178,7 @@ def build_focal_camnet(conv_filters,
 
     for block in range(len(conv_filters)):
 
-        thrifty_focus = custom_focal_module(conv_filters[block], depth)
+        thrifty_focus = custom_focal_module(x.shape[1:], conv_filters[block], depth)
 
         prev_layers = [thrifty_focus(x)]
         for i in range(iterations - 1):
@@ -193,6 +199,89 @@ def build_focal_camnet(conv_filters,
 
     x = Lambda(lambda z: tf.reduce_sum(z[:, :, :, :-1], axis=(1, 2)))(x)
     x = Add()([x, y, tf.ones_like(x) * (2 ** (-10))])
+    # want to re-normalize without destroying the gradient
+    outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
+    # outputs shape is (batch, n_classes)
+
+    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'thrifty_model_{"%02d" % time()}')
+
+    model.compile(loss=loss,
+                  optimizer=opt,
+                  metrics=[accuracy])
+
+    return model
+
+
+def build_focal_camnetv2(conv_filters,
+                         conv_size,
+                         dense_layers,
+                         learning_rate,
+                         image_size,
+                         iterations=24,
+                         loss='categorical_crossentropy',
+                         l1=None, l2=None,
+                         activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                         n_classes=10,
+                         skips=2,
+                         depth=4,
+                         **kwargs):
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    inputs = Input(image_size)
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    x = inputs
+
+    x = Lambda(lambda z: tf.pad(z, ((0, 0), (0, 0), (0, 0), (0, conv_filters[0] - z.shape[-1]))))(x)
+
+    for block in range(len(conv_filters)):
+
+        thrifty_focus = custom_focal_module(x.shape[1:], conv_filters[block], depth)
+
+        prev_layers = [thrifty_focus(x)]
+        for i in range(iterations - 1):
+            x = thrifty_focus(x)
+            prev_layers.append(x)
+            x = Add()(prev_layers[-skips:])
+            x = BatchNormalization()(x)
+        x = Add()(prev_layers)
+    # this dense operation is over an input tensor of size (batch, width, height, channels)
+    # semantic segmentation output with extra (irrelevant) channel
+    x = Dense(n_classes + 1, activation='softmax', use_bias=False, name='cam')(x)
+    # reduce sum over width / height
+    y = Lambda(
+        lambda z: tf.reduce_sum(
+            tf.stack([z[:, :, :, -1] for i in range(n_classes)], -1),
+            axis=(1, 2)
+        )
+    )(x)
+
+    y = tf.math.log(y + tf.ones_like(y))
+
+    x = Lambda(lambda z: tf.reduce_sum(z[:, :, :, :-1], axis=(1, 2)))(x)
+    x = Add()([x, y])
     # want to re-normalize without destroying the gradient
     outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
     # outputs shape is (batch, n_classes)

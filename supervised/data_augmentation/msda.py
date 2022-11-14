@@ -8,7 +8,7 @@ tf.data.Dataset object representing the augmented dataset
 """
 
 
-def blended_dset(train_ds, n_blended=2, prob=None, std=.1, **kwargs):
+def blended_dset(train_ds, n_blended=2, prob=.5, std=.1, **kwargs):
     """
     :param train_ds: dataset of training images
     :param batch_size: size of batches to return from the generator

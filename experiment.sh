@@ -14,4 +14,4 @@
 #SBATCH --array=[0]
 . /home/fagg/tf_setup.sh
 conda activate tf
-python run.py --pkl experiments/experiment-16682420314429207.pkl --lscratch $LSCRATCH --id $SLURM_ARRAY_TASK_ID
+python run.py --pkl experiments/experiment-16683979656673205.pkl --lscratch $LSCRATCH --id $SLURM_ARRAY_TASK_ID

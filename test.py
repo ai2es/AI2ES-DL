@@ -1,7 +1,7 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reordered, build_focal_modulator, build_focal_camnet
+    build_camnet_reordered, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from supervised.data_augmentation.msda import mixup_dset, blended_dset
@@ -41,13 +41,15 @@ network_params must include:
             'lrate': float
     'hyperband': bool
 """
+
+
 network_params = {
-    'network_fn': build_focal_camnet,
+    'network_fn': build_focal_camnetv2,
     'network_args': {
         'lrate': 5e-4,
         'n_classes': 3,
-        'iterations': 2,
-        'conv_filters': '[48]',
+        'iterations': 3,
+        'conv_filters': '[32]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': 5e-4,
@@ -70,9 +72,9 @@ experiment_params must include:
 """
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 512,
-    'validation_steps': 128,
-    'patience': 10,
+    'steps_per_epoch': 1024,
+    'validation_steps': 256,
+    'patience': 32,
     'min_delta': 0.0,
     'epochs': 512,
     'nogo': False,
@@ -95,10 +97,10 @@ dataset_params = {
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 4,
+    'batch': 6,
     'prefetch': 4,
     'shuffle': True,
-    'augs': [custom_rand_augment_dset]
+    'augs': [custom_rand_augment_dset, blended_dset]
 }
 
 config = Config(hardware_params, network_params, dataset_params, experiment_params)
