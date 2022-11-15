@@ -853,7 +853,7 @@ def build_camnet_reorderedv3(conv_filters,
 
     x = Lambda(lambda z: tf.reduce_mean(z[:, :, :, :-1], axis=(1, 2)))(x)
     eps = 2**(-64)
-    x = y / tf.math.negative(tf.math.log(((1 + eps)*tf.ones_like(x) - x)))
+    x = y / tf.math.negative(tf.math.log((x + eps)))
     # want to re-normalize without destroying the gradient
     outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
     # outputs shape is (batch, n_classes)
