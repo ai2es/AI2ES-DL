@@ -788,6 +788,25 @@ def build_camnet_reorderedv3(conv_filters,
                            n_classes=10,
                            skips=2,
                            **kwargs):
+
+    # -ln(1 - r / - ln(r))
+    # r = max(p_class) / p(p_no_class)
+    # r = tf.reduce_max(z, axis=-1) / z[-1]
+    acc = tf.keras.metrics.SparseCategoricalAccuracy()
+    # max
+
+    def jay_loss(y_true, y_pred):
+        indicies = tf.argmax(y_true, axis=-1)
+        nd_indicies = tf.stack([tf.range(tf.shape(indicies)[0], dtype=indicies.dtype), indicies], -1)
+
+        # r = tf.gather_nd(y_pred[:, :-1], nd_indicies) / y_pred[:, -1]
+
+        return tf.math.negative(tf.math.log(y_pred[:, -1] / tf.math.negative(tf.math.log(tf.gather_nd(y_pred[:, :-1],
+                                                                                                      nd_indicies) + 2**(-16)))))
+
+    def jay_acc(y_true, y_pred):
+        return tf.math.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred[:, -1], axis=-1))
+
     if isinstance(conv_filters, str):
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
     if isinstance(conv_size, str):
@@ -843,22 +862,11 @@ def build_camnet_reorderedv3(conv_filters,
     # this dense operation is over an input tensor of size (batch, width, height, channels)
     # semantic segmentation output with extra (irrelevant) channel
     x = Dense(n_classes + 1, activation='softmax', use_bias=False, name='cam')(x)
-    # reduce sum over width / height
-    y = Lambda(
-        lambda z: tf.reduce_mean(
-            tf.stack([z[:, :, :, -1] for i in range(n_classes)], -1),
-            axis=(1, 2)
-        )
-    )(x)
 
-    x = Lambda(lambda z: tf.reduce_mean(z[:, :, :, :-1], axis=(1, 2)))(x)
-    eps = 2**(-64)
-    x = y / tf.math.negative(tf.math.log((x + eps)))
-    # want to re-normalize without destroying the gradient
+    x = Lambda(lambda z: tf.reduce_mean(z, axis=(1, 2)))(x)
     outputs = Lambda(lambda z: tf.linalg.normalize(z, 1, axis=-1)[0])(x)
-    # outputs shape is (batch, n_classes)
 
-    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+    # outputs shape is (batch, n_classes)
 
     opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
                                     beta_1=0.9, beta_2=0.999,
@@ -867,11 +875,11 @@ def build_camnet_reorderedv3(conv_filters,
     opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
 
     model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
-                           name=f'thrifty_model_{"%02d" % time()}')
+                           name=f'camnet_model_{"%02d" % time()}')
 
-    model.compile(loss=loss,
+    model.compile(loss=jay_loss,
                   optimizer=opt,
-                  metrics=[accuracy])
+                  metrics=[jay_acc])
 
     return model
 
