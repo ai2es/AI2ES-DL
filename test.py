@@ -1,7 +1,7 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reordered, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
+    build_camnet_reorderedv3, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from supervised.data_augmentation.msda import mixup_dset, blended_dset
@@ -44,11 +44,11 @@ network_params must include:
 
 
 network_params = {
-    'network_fn': build_focal_camnetv2,
+    'network_fn': build_camnet_reorderedv3,
     'network_args': {
         'lrate': 5e-4,
         'n_classes': 3,
-        'iterations': 3,
+        'iterations': 6,
         'conv_filters': '[32]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',

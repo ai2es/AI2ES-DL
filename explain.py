@@ -42,7 +42,7 @@ if __name__ == "__main__":
         break
 
     if args.thrifty:
-        show_mask(test_dset, 3, model_data, class_names=class_names)
+        show_mask(test_dset, 5, model_data, class_names=class_names)
 
     if args.lime:
         for x, y in iter(test_dset):

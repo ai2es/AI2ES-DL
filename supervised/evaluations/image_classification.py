@@ -148,6 +148,10 @@ def get_mask(model, image):
     model = model.get_model()
     new_outputs = []
     d = -1
+
+    for i, layer in enumerate(model.layers):
+        print(layer.name)
+
     for i, layer in enumerate(model.layers[::-1]):
         if 'cam' in layer.name:
             d = -i - 1
@@ -159,11 +163,11 @@ def get_mask(model, image):
     for i, layer in enumerate(model.layers):
         try:
             if 'chkpt' in layer.name:
-                pass
-                print('chkpt')
                 new_outputs.append(model.layers[d](layer.output))
         except Exception as e:
             print(e)
+    print(model.input)
+    print(new_outputs)
     model = tf.keras.models.Model(inputs=[model.input], outputs=new_outputs)
     model.compile()
     pred = model.predict(image)
