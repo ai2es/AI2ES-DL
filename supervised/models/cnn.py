@@ -805,7 +805,7 @@ def build_camnet_reorderedv3(conv_filters,
                                                                                                       nd_indicies) + 2**(-16)))))
 
     def jay_acc(y_true, y_pred):
-        return tf.math.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred[:, -1], axis=-1))
+        return tf.math.equal(tf.math.argmax(y_true, axis=-1), tf.math.argmax(y_pred[:, :-1], axis=-1))
 
     if isinstance(conv_filters, str):
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
