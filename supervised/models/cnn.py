@@ -29,8 +29,9 @@ class LossWeightScheduler(Callback):
         self.alpha = ALPHA
 
     # customize your behavior
-    def on_epoch_end(self, epoch, logs={}):
-        K.set_value(self.alpha, self.schedule(epoch))
+    def on_epoch_begin(self, epoch, logs={}):
+        if hasattr(self.model, "loss_weights"):
+            print(self.model.loss_weights)
 
 
 def focal_module(units, focal_depth):
@@ -951,6 +952,7 @@ def build_camnet_reorderedv3(conv_filters,
     opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
 
     model.compile(loss=[CE, NCE, mask_loss],
+                  loss_weights=[1, 1, 1],
                   optimizer=opt,
                   metrics=['categorical_accuracy'])
 

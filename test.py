@@ -49,7 +49,7 @@ network_params = {
         'lrate': 5e-4,
         'depth': 3,
         'n_classes': 3,
-        'iterations': 5,
+        'iterations': 6,
         'conv_filters': '[32]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
@@ -75,9 +75,9 @@ experiment_params = {
     'seed': 42,
     'steps_per_epoch': 1024,
     'validation_steps': 256,
-    'patience': 3,
+    'patience': 32,
     'min_delta': 0.0,
-    'epochs': 64,
+    'epochs': 256,
     'nogo': False,
 }
 """
