@@ -93,7 +93,7 @@ def labeled_multi_image(rows, n_cols, row_labs=None, col_labs=None, colors=None,
     from mpl_toolkits.axes_grid1 import ImageGrid
     import matplotlib.patches as mpatches
 
-    fig = plt.figure(figsize=(n_cols*2, 2*len(rows)))
+    fig = plt.figure(figsize=(n_cols * 2, 2 * len(rows)))
     grid = ImageGrid(fig, 111,  # similar to subplot(111)
                      nrows_ncols=(len(rows), n_cols),  # creates 2x2 grid of axes
                      axes_pad=0.1,  # pad between axes in inch.
@@ -149,30 +149,47 @@ def get_mask(model, image):
     new_outputs = []
     d = -1
 
-    for i, layer in enumerate(model.layers):
-        print(layer.name)
-
     for i, layer in enumerate(model.layers[::-1]):
         if 'cam' in layer.name:
             d = -i - 1
             new_outputs.append(layer.output)
+            break
+        if 'clam' in layer.name:
             break
     else:
         raise ValueError('cam layer not found')
 
     for i, layer in enumerate(model.layers):
         try:
-            if 'chkpt' in layer.name:
+            if 'chkpt' in layer.name or 'model' in layer.name:
                 new_outputs.append(model.layers[d](layer.output))
+            if 'clam' in layer.name:
+                new_outputs.append(layer)
         except Exception as e:
             print(e)
-    print(model.input)
-    print(new_outputs)
-    model = tf.keras.models.Model(inputs=[model.input], outputs=new_outputs)
-    model.compile()
-    pred = model.predict(image)
-    return np.concatenate([to_shape(z, max([p.shape for p in pred], key=lambda k: k[1])) for z in pred], 2), \
-           [tf.reduce_sum(img[0], axis=(0, 1)) for img in pred]
+
+    if 'clam' in new_outputs[0].name:
+        pred = []
+        for model in new_outputs:
+            model.compile()
+            p, idk, cam = model.predict(image)
+            p = tf.one_hot(tf.argmax(p, axis=-1), depth=p.shape[-1] + 1)
+            p = np.array(p)
+            p[:, -1] += 1
+            cam = np.array(cam)
+            # cam *= p
+            print(p)
+            pred.append(cam)
+
+        return np.concatenate([to_shape(z, max([p.shape for p in pred], key=lambda k: k[1])) for z in pred], 2), \
+               [tf.reduce_sum(img[0], axis=(0, 1)) for img in pred]
+    else:
+
+        model = tf.keras.models.Model(inputs=[model.input], outputs=new_outputs)
+        model.compile()
+        pred = model.predict(image)
+        return np.concatenate([to_shape(z, max([p.shape for p in pred], key=lambda k: k[1])) for z in pred], 2), \
+               [tf.reduce_sum(img[0], axis=(0, 1)) for img in pred]
 
 
 def color_squish(x):

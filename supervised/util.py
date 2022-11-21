@@ -66,8 +66,9 @@ def prep_gpu(cpus_per_task, gpus_per_task=0, wait=True):
 
     # use the available cpus to set the parallelism level
     if cpus_per_task is not None:
-        tf.config.threading.set_inter_op_parallelism_threads(cpus_per_task)
-        tf.config.threading.set_intra_op_parallelism_threads(cpus_per_task)
+        pass
+        #tf.config.threading.set_inter_op_parallelism_threads(cpus_per_task)
+        #tf.config.threading.set_intra_op_parallelism_threads(cpus_per_task)
 
     if n_physical_devices > 1:
         for physical_device in physical_devices:
@@ -200,11 +201,22 @@ def start_training(model,
         else:
             return (base_learning * 4) * (0.85 ** (local_epoch - 7))
 
-    callbacks = [tf.keras.callbacks.EarlyStopping(patience=experiment_params['patience'],
+    def loss_weight_schedule(epoch):
+        """
+        loss weight schedule for clam model
+        """
+        return 0 if epoch < 3 else 1
+
+    from supervised.models.cnn import LossWeightScheduler
+
+    callbacks = [
+                 tf.keras.callbacks.EarlyStopping(patience=experiment_params['patience'],
                                                   restore_best_weights=True,
                                                   min_delta=experiment_params['min_delta'],
-                                                  monitor='val_categorical_accuracy'),
-                 tf.keras.callbacks.LearningRateScheduler(bleed_out)]
+                                                  monitor='val_clam_categorical_accuracy'),
+                 tf.keras.callbacks.LearningRateScheduler(bleed_out),
+                 LossWeightScheduler(loss_weight_schedule)
+                 ]
 
     return execute_exp(model, train_dset, val_dset, network_params, experiment_params,
                        train_steps, val_steps, callbacks=callbacks, evaluate_on=evaluate_on)

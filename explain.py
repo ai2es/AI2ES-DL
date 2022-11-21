@@ -34,7 +34,7 @@ if __name__ == "__main__":
     class_names = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['class_names']
     model_data = results.model_data
     keras_model = model_data.get_model()
-    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['test']
+    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['train']
     test_dset = test_dset.batch(1)
 
     for x, y in iter(test_dset):
@@ -42,7 +42,7 @@ if __name__ == "__main__":
         break
 
     if args.thrifty:
-        show_mask(test_dset, 5, model_data, class_names=class_names)
+        show_mask(test_dset, 15, model_data, class_names=class_names)
 
     if args.lime:
         for x, y in iter(test_dset):
