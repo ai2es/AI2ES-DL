@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import tensorflow as tf
+import numpy as np
 
 
 def df_to_image_dataset(df, shuffle=False, image_size=(256, 256), batch_size=16, prefetch=1, seed=42,
@@ -186,3 +187,35 @@ def to_dataset(df, image_size=(256, 256), class_mode='sparse', **kwargs):
 
     return ds
 
+
+def report(df):
+    if df is None:
+        print('None')
+        return None
+
+    # for each site, for each class
+    # site is filepath.split('/')[0]
+    # class is filepath.split('/')[-1]
+    sites = set()
+    classes = set()
+
+    for index, row in df.iterrows():
+        split_path = row['filepath'].split('/')
+        sites.add(split_path[0])
+        classes.add(row['class'])
+    # map all sites / classes to their row / column indices in the table
+    sites = {site: i for i, site in enumerate(sorted(list(sites)))}
+    classes = {c: i for i, c in enumerate(sorted(list(classes)))}
+    # assign the table
+    table = np.zeros((len(sites), len(classes)))
+    # iterate through the dataset incrementing the appropriate table values to get a table of counts
+    for index, row in df.iterrows():
+        split_path = row['filepath'].split('/')
+        # table[site, class] += 1
+        table[sites[split_path[0]], classes[row['class']]] += 1
+
+    for site in sites:
+        for c in classes:
+            print(f'{site} ({c}): {table[sites[site], classes[c]]}')
+
+    return table

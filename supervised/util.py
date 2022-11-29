@@ -9,6 +9,7 @@ import tensorflow as tf
 from supervised.data_structures import ModelData
 
 import pynvml
+import numpy as np
 
 
 class Config:
@@ -207,7 +208,7 @@ def start_training(model,
         """
         return 0 if epoch < 3 else 1
 
-    from supervised.models.cnn import LossWeightScheduler
+    #from supervised.models.cnn import LossWeightScheduler
 
     callbacks = [
                  tf.keras.callbacks.EarlyStopping(patience=experiment_params['patience'],
@@ -215,7 +216,7 @@ def start_training(model,
                                                   min_delta=experiment_params['min_delta'],
                                                   monitor='val_clam_categorical_accuracy'),
                  tf.keras.callbacks.LearningRateScheduler(bleed_out),
-                 LossWeightScheduler(loss_weight_schedule)
+                 #LossWeightScheduler(loss_weight_schedule)
                  ]
 
     return execute_exp(model, train_dset, val_dset, network_params, experiment_params,

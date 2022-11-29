@@ -29,12 +29,16 @@ if __name__ == "__main__":
 
     with open(args.fname, 'rb') as fp:
         results = pickle.load(fp)
-    results.summary()
+
+    try:
+        results.summary()
+    except:
+        pass
     results.config.dataset_params['dset_args']['path'] = '../Semi-supervised/data/'
     class_names = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['class_names']
     model_data = results.model_data
     keras_model = model_data.get_model()
-    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['train']
+    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['val']
     test_dset = test_dset.batch(1)
 
     for x, y in iter(test_dset):

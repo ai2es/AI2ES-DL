@@ -1,7 +1,7 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reorderedv3, build_camnet_reorderedv2, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
+    build_camnet_reorderedv3, build_camnet_reorderedv4, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from supervised.data_augmentation.msda import mixup_dset, blended_dset
@@ -44,13 +44,13 @@ network_params must include:
 
 
 network_params = {
-    'network_fn': build_camnet_reorderedv3,
+    'network_fn': build_camnet_reorderedv4,
     'network_args': {
         'lrate': 5e-4,
         'depth': 3,
-        'n_classes': 3,
+        'n_classes': 4,
         'iterations': 6,
-        'conv_filters': '[32]',
+        'conv_filters': '[12]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': 5e-4,
@@ -75,9 +75,9 @@ experiment_params = {
     'seed': 42,
     'steps_per_epoch': 1024,
     'validation_steps': 256,
-    'patience': 32,
+    'patience': 8,
     'min_delta': 0.0,
-    'epochs': 256,
+    'epochs': 64,
     'nogo': False,
 }
 """
@@ -91,17 +91,17 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': dot_dataset,
+    'dset_fn': citrus_leaves,
     'dset_args': {
         'image_size': (128, 128),
         'path': '../Semi-supervised/data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 8,
+    'batch': 12,
     'prefetch': 4,
     'shuffle': True,
-    'augs': [custom_rand_augment_dset, foff_dset]
+    'augs': [foff_dset]
 }
 
 config = Config(hardware_params, network_params, dataset_params, experiment_params)

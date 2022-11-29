@@ -129,6 +129,12 @@ def dot_dataset(path, image_size=(256, 256, 3)):
     ds, val, test = df.iloc[:round((len(df) / 10)*7)], df.iloc[round((len(df) / 10)*7):round((len(df) / 10)*8)],\
                     df.iloc[round((len(df) / 10)*8):]
 
+    from supervised.datasets.util import report
+
+    report(ds)
+    report(val)
+    report(test)
+
     val = to_dataset(val, class_mode='categorical', image_size=image_size)
     test = to_dataset(test, class_mode='categorical', image_size=image_size)
     ds = to_dataset(ds, class_mode='categorical', image_size=image_size)
