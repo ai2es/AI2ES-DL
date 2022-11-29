@@ -5,7 +5,7 @@ from supervised.util import load_most_recent_results
 
 import pickle
 import argparse
-
+import tensorflow as tf
 
 def create_parser():
     """
@@ -38,15 +38,18 @@ if __name__ == "__main__":
     class_names = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['class_names']
     model_data = results.model_data
     keras_model = model_data.get_model()
-    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['val']
-    test_dset = test_dset.batch(1)
+    # results.config.dataset_params['dset_args']['image_size'] = (256, 256)
+    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['train']
+    test_dset = test_dset.batch(results.config.dataset_params['batch'])
 
     for x, y in iter(test_dset):
         print(x.shape, y.shape)
         break
 
+    model_data.get_model().evaluate(test_dset, steps=10000)
+
     if args.thrifty:
-        show_mask(test_dset, 15, model_data, class_names=class_names)
+        show_mask(test_dset, 4, model_data, class_names=class_names)
 
     if args.lime:
         for x, y in iter(test_dset):

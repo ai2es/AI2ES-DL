@@ -1,3 +1,5 @@
+from time import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -145,10 +147,21 @@ def to_shape(a, shape):
 
 
 def get_mask(model, image):
-    model = model.get_model()
+    def CE(y_true, y_pred):
+        return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
+
+    def NCE(y_true, y_pred):
+        return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
+
+    def mask_loss(y_true, y_pred):
+        return tf.math.negative(tf.math.log(1 + 2**(-32) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+
+    # model = model.get_model()
+    model = tf.keras.models.load_model('../results/stupid_models/1669729179946299', custom_objects={'CE': CE, 'NCE': NCE, 'mask_loss': mask_loss})
+
     new_outputs = []
     d = -1
-
+    tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
     for i, layer in enumerate(model.layers[::-1]):
         if 'cam' in layer.name:
             d = -i - 1
@@ -171,8 +184,11 @@ def get_mask(model, image):
     if 'clam' in new_outputs[0].name:
         pred = []
         for model in new_outputs:
+            tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
+            print(model.layers)
             model.compile()
             p, idk, cam = model.predict(image)
+            print(p)
             p = tf.one_hot(tf.argmax(p, axis=-1), depth=p.shape[-1] + 1)
             p = np.array(p)
             p[:, -1] += 1

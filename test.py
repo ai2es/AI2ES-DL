@@ -101,7 +101,7 @@ dataset_params = {
     'batch': 12,
     'prefetch': 4,
     'shuffle': True,
-    'augs': [foff_dset]
+    'augs': []
 }
 
 config = Config(hardware_params, network_params, dataset_params, experiment_params)

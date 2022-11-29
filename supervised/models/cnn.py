@@ -956,6 +956,8 @@ def build_camnet_reorderedv4(conv_filters,
                              activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                              n_classes=10,
                              skips=2,
+                             alpha=1,
+                             beta=1,
                              **kwargs):
 
     def CE(y_true, y_pred):
@@ -1060,7 +1062,7 @@ def build_camnet_reorderedv4(conv_filters,
     opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
 
     model.compile(loss=[CE, mask_loss, NCE],
-                  loss_weights=[1, 1, 1],
+                  loss_weights=[1, alpha, beta],
                   optimizer=opt,
                   metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
 

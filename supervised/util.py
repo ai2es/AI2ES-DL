@@ -131,10 +131,11 @@ def execute_exp(model, train_dset, val_dset, network_params, experiment_params,
                         epochs=experiment_params['epochs'],
                         verbose=True,
                         validation_data=val_dset,
-                        validation_steps=val_steps,
                         callbacks=callbacks,
                         steps_per_epoch=train_steps,
                         shuffle=False)
+
+    model.save('../results/stupid_models/' + ''.join(str(time()).split('.')))
 
     evaluate_on = dict() if evaluate_on is None else evaluate_on
 
@@ -149,6 +150,7 @@ def execute_exp(model, train_dset, val_dset, network_params, experiment_params,
                            history=history.history,
                            run_time=end - start)
     print('returning model data')
+
     return model_data
 
 
@@ -174,7 +176,6 @@ def start_training(model,
     # Override arguments if we are using exp_index
 
     train_steps = train_steps if train_steps is not None else 100
-    val_steps = val_steps if val_steps is not None else 100
 
     print(train_steps, val_steps)
 
@@ -220,7 +221,7 @@ def start_training(model,
                  ]
 
     return execute_exp(model, train_dset, val_dset, network_params, experiment_params,
-                       train_steps, val_steps, callbacks=callbacks, evaluate_on=evaluate_on)
+                       train_steps, callbacks=callbacks, evaluate_on=evaluate_on)
 
 
 from itertools import product
@@ -426,7 +427,7 @@ class Experiment:
 
             return ds
 
-        val_dset = val_dset.batch(self.dataset_params['batch']).repeat()
+        val_dset = val_dset.batch(self.dataset_params['batch'])
 
         train_dset = postprocess_dset(train_dset)
 
@@ -436,12 +437,10 @@ class Experiment:
         if self.network_params['hyperband']:
             return start_training(model, train_dset, val_dset, self.network_params, self.params,
                                   train_steps=self.params['steps_per_epoch'],
-                                  val_steps=self.params['validation_steps'],
                                   evaluate_on={'test': test_dset})
 
         model_data = start_training(model, train_dset, val_dset, self.network_params, self.params,
-                                    train_steps=self.params['steps_per_epoch'],
-                                    val_steps=self.params['validation_steps'])
+                                    train_steps=self.params['steps_per_epoch'])
 
         result = Results(self, model_data)
         with open(f'{os.curdir}/../results/{generate_fname(self.params)}', 'wb') as fp:

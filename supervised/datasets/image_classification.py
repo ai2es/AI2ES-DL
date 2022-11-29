@@ -124,7 +124,7 @@ def dot_dataset(path, image_size=(256, 256, 3)):
 
     df, class_map = df_from_dirlist(paths)
 
-    df = df.sample(frac=1).reset_index(drop=True)
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     ds, val, test = df.iloc[:round((len(df) / 10)*7)], df.iloc[round((len(df) / 10)*7):round((len(df) / 10)*8)],\
                     df.iloc[round((len(df) / 10)*8):]
