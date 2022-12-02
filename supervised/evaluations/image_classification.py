@@ -156,12 +156,12 @@ def get_mask(model, image):
     def mask_loss(y_true, y_pred):
         return tf.math.negative(tf.math.log(1 + 2**(-32) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
 
-    # model = model.get_model()
-    model = tf.keras.models.load_model('../results/stupid_models/1669729179946299', custom_objects={'CE': CE, 'NCE': NCE, 'mask_loss': mask_loss})
+    model = model.get_model()
+    # model = tf.keras.models.load_model('../results/stupid_models/1669729179946299', custom_objects={'CE': CE, 'NCE': NCE, 'mask_loss': mask_loss})
 
     new_outputs = []
     d = -1
-    tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
+    # tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
     for i, layer in enumerate(model.layers[::-1]):
         if 'cam' in layer.name:
             d = -i - 1
@@ -184,17 +184,17 @@ def get_mask(model, image):
     if 'clam' in new_outputs[0].name:
         pred = []
         for model in new_outputs:
-            tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
-            print(model.layers)
+            # tf.keras.utils.plot_model(model, '../results/modelpics/' + str(time()).split('.')[-1] + '.png')
+            # print(model.layers)
             model.compile()
             p, idk, cam = model.predict(image)
-            print(p)
+            # print(p)
             p = tf.one_hot(tf.argmax(p, axis=-1), depth=p.shape[-1] + 1)
             p = np.array(p)
             p[:, -1] += 1
             cam = np.array(cam)
             # cam *= p
-            print(p)
+            # print(p)
             pred.append(cam)
 
         return np.concatenate([to_shape(z, max([p.shape for p in pred], key=lambda k: k[1])) for z in pred], 2), \
@@ -244,7 +244,7 @@ def show_mask(dset, num_images, model, class_names, fname=''):
     for x, y in iter(dset):
         imgs.append(x)
         output, probs = get_mask(model, x)
-        print(output.shape)
+        # print(output.shape)
         if len(output.shape) < 4:
             output = np.expand_dims(output, 0)
             probs = np.expand_dims(probs, 0)
@@ -263,16 +263,16 @@ def show_mask(dset, num_images, model, class_names, fname=''):
         ima = ima - np.max(np.min(ima), 0)
         ima = (ima / np.max(ima)) * 255
         ima = np.concatenate([ima for i in range(len(values[i]))], 1)
-        print([mask.shape for mask in masks])
+        # print([mask.shape for mask in masks])
         im = masks[i][0]
 
         img = np.float32(img[0])
-        print(im.shape)
+        # print(im.shape)
         img = np.stack([img for i in range(im.shape[-1])], -1)
 
         im = tf.nn.relu(im - (img / len(class_names)))
         im, colors = color_squish(im)
-        print(im.shape, ima.shape)
+        # print(im.shape, ima.shape)
         img = (tf.cast(im, tf.float32) + ima) * .5
 
         img = tf.cast(img, tf.uint8)
