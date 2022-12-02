@@ -549,3 +549,24 @@ def load_most_recent_results(d, n=1):
                 break
 
     return results
+
+
+def load_most_recent_results_with_fnames(d, n=1):
+    """
+    load the n most recent result files from the result directory
+    :param d: directory from which to load the files
+    :param n: number of recent results to load
+    :return: a list of Results objects
+    """
+    results = []
+    fnames = []
+
+    for file in sorted(os.listdir(d), key=lambda f: os.stat(os.path.join(d, f)).st_mtime, reverse=True):
+        with open(os.path.join(d, file), 'rb') as fp:
+            results.append(pickle.load(fp))
+            fnames.append(fp)
+            n -= 1
+            if not n:
+                break
+
+    return results, fnames

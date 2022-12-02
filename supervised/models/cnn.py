@@ -967,7 +967,7 @@ def build_camnet_reorderedv4(conv_filters,
         return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
 
     def mask_loss(y_true, y_pred):
-        return tf.math.negative(tf.math.log(1 + 2**(-32) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+        return tf.math.negative(tf.math.log(1 + 2**(-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
 
     if isinstance(conv_filters, str):
 

@@ -34,22 +34,18 @@ if __name__ == "__main__":
         results.summary()
     except:
         pass
-    results.config.dataset_params['dset_args']['path'] = '../Semi-supervised/data/'
+    results.config.dataset_params['dset_args']['path'] = '../data/'
     class_names = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['class_names']
     model_data = results.model_data
     keras_model = model_data.get_model()
     # results.config.dataset_params['dset_args']['image_size'] = (256, 256)
-    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['train']
+    test_dset = results.config.dataset_params['dset_fn'](**results.config.dataset_params['dset_args'])['test']
     test_dset = test_dset.batch(results.config.dataset_params['batch'])
 
-    for x, y in iter(test_dset):
-        print(x.shape, y.shape)
-        break
-
-    model_data.get_model().evaluate(test_dset, steps=10000)
+    model_data.get_model().evaluate(test_dset, steps=100)
 
     if args.thrifty:
-        show_mask(test_dset, 4, model_data, class_names=class_names)
+        show_mask(test_dset, 16, model_data, class_names=class_names)
 
     if args.lime:
         for x, y in iter(test_dset):
