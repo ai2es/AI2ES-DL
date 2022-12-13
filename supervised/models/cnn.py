@@ -10,14 +10,12 @@ import keras.backend as K
 from tensorflow.keras.applications import EfficientNetB0, ResNet50V2, VGG16, MobileNetV3Small
 from time import time
 
-from supervised.models.ae import clam_unet, unet
+from supervised.models.ae import clam_unet, unet, transformer_unet
+from supervised.models.custom_layers import TFPositionalEncoding2D
 
 """
 model building functions should accept only float, int, or string arguments and must return only a compiled keras model
 """
-
-HARDSWISH = lambda x: x * tf.nn.relu6(x + 3) / 6
-MISH = lambda x: x * tf.nn.tanh(tf.nn.softplus(x))
 
 
 def focal_module(units, focal_depth):
@@ -810,7 +808,7 @@ def build_camnet_reorderedv3(conv_filters,
         return tf.math.negative(tf.math.log(1 - tf.reduce_max(y_pred, axis=-1)))
 
     def mask_loss(y_true, y_pred):
-        return 0*tf.math.negative(tf.math.log(1 - tf.reduce_max(y_pred, axis=-1)))
+        return 0 * tf.math.negative(tf.math.log(1 - tf.reduce_max(y_pred, axis=-1)))
 
     if isinstance(conv_filters, str):
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
@@ -911,7 +909,7 @@ def build_camnet_reorderedv3(conv_filters,
     model_inputs = Input(image_size)
 
     base = base_model()
-    #base = clam_unet(12, image_size, n_classes=n_classes, depth=5)
+    # base = clam_unet(12, image_size, n_classes=n_classes, depth=5)
 
     mask = masker(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
 
@@ -924,7 +922,7 @@ def build_camnet_reorderedv3(conv_filters,
     masked_out, _, _ = base(masked_inputs)
 
     mask_size = tf.reduce_max(base_out, axis=-1, keepdims=True) / (
-                tf.reduce_sum(base_out, axis=-1, keepdims=True) + idk)
+            tf.reduce_sum(base_out, axis=-1, keepdims=True) + idk)
 
     outputs = [base_out, masked_out, mask_size]
 
@@ -956,21 +954,20 @@ def build_camnet_reorderedv4(conv_filters,
                              activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                              n_classes=10,
                              skips=2,
-                             alpha=1,
-                             beta=1,
+                             alpha=1e-3,
+                             beta=1e-3,
                              **kwargs):
-
     def CE(y_true, y_pred):
         return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
 
     def NCE(y_true, y_pred):
-        return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
+        return tf.math.negative(
+            tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
 
     def mask_loss(y_true, y_pred):
-        return tf.math.negative(tf.math.log(1 + 2**(-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+        return tf.math.negative(tf.math.log(1 + 2 ** (-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
 
     if isinstance(conv_filters, str):
-
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
     if isinstance(conv_size, str):
         conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
@@ -985,6 +982,7 @@ def build_camnet_reorderedv4(conv_filters,
         'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
         'padding': 'same'
     }
+
     # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
     def mask_plurality(image_size, cam_size, pred_size):
@@ -1029,7 +1027,7 @@ def build_camnet_reorderedv4(conv_filters,
 
     model_inputs = Input(image_size)
 
-    base = unet(12, image_size, n_classes=n_classes, depth=4)
+    base = transformer_unet(16, image_size, n_classes=n_classes, depth=4)
 
     masked_pred = mask_plurality(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
     masked_all = mask_total(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
@@ -1139,3 +1137,112 @@ def build_basic_cnn(conv_filters,
                   metrics=[accuracy])
 
     return model
+
+
+def fast_fourier_transformer(
+                             learning_rate,
+                             image_size,
+                             attention_heads,
+                             loss='categorical_crossentropy',
+                             l1=None, l2=None,
+                             n_classes=10,
+                             dropout=0.0,
+                             **kwargs
+                            ):
+
+    conv_params = {
+        'use_bias': True,
+        'kernel_initializer': tf.keras.initializers.LecunNormal(),
+        'bias_initializer': tf.keras.initializers.LecunNormal(),
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+    }
+    if isinstance(attention_heads, str):
+        attention_heads = [int(i) for i in attention_heads.strip('[]').split(', ')]
+    # define the input layer (required)
+    inputs = Input(image_size)
+    x = inputs
+    # set reference x separately to keep track of the input layer
+
+    x = Conv2D(filters=32, kernel_size=(4, 4), strides=(4, 4), **conv_params, padding='same')(x)
+
+    for i, heads in enumerate(attention_heads):
+        x = Conv2D(filters=32, kernel_size=(2, 2), strides=(2, 2), **conv_params, padding='same')(x)
+        x = LayerNormalization()(x)
+        # for all layers except the last one, we return sequences
+        x = Concatenate()([x, TFPositionalEncoding2D(2)(x)])
+        skip = x
+        input_shape = x.shape
+        key_dim = value_dim = x.shape[-1]
+        if i == len(attention_heads) - 1:
+            fft = tf.signal.fft(tf.cast(x, tf.complex64))
+
+            real = tf.math.real(fft)
+            imag = tf.math.imag(fft)
+
+            mag = tf.cast(tf.math.sqrt(real ** 2 + imag ** 2), tf.float32)
+            phase = tf.cast(tf.math.atan(imag / real), tf.float32)
+
+            x = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(x)
+            mag = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(real)
+            phase = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(imag)
+
+            mag = LayerNormalization()(mag)
+            phase = LayerNormalization()(phase)
+            # at the last layer of attention set the output to be a vector instead of a matrix
+            x = MultiHeadAttention(heads,
+                                   key_dim,
+                                   value_dim,
+                                   kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+                                   dropout=dropout)(mag, phase, x)
+
+            x = Reshape((input_shape[1], input_shape[2], input_shape[-1]))(x)
+        else:
+            fft = tf.signal.fft(tf.cast(x, tf.complex64))
+
+            real = tf.math.real(fft)
+            imag = tf.math.imag(fft)
+
+            mag = tf.cast(tf.math.sqrt(real ** 2 + imag ** 2), tf.float32)
+            phase = tf.cast(tf.math.atan(imag / real), tf.float32)
+
+            x = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(x)
+            mag = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(real)
+            phase = Reshape((input_shape[1] * input_shape[2], input_shape[-1]))(imag)
+
+            mag = LayerNormalization()(mag)
+            phase = LayerNormalization()(phase)
+
+            x = MultiHeadAttention(heads,
+                                   key_dim,
+                                   value_dim,
+                                   kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+                                   dropout=dropout)(mag, phase, x)
+
+            x = Reshape((input_shape[1], input_shape[2], input_shape[-1]))(x)
+
+        x = Add()([x, skip])
+        x = LayerNormalization()(x)
+
+    def replacenan(t):
+        return tf.where(tf.math.is_nan(t), tf.zeros_like(t), t)
+
+    x = replacenan(x)
+    x = GlobalMaxPooling2D()(x)
+
+    outputs = Dense(n_classes, activation=tf.keras.activations.softmax)(x)
+    # build the model
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'vit_model_{"%02d" % time()}')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+    # compile the model
+    model.compile(loss=loss,
+                  optimizer=opt,
+                  metrics=[accuracy])
+
+    return model
+
