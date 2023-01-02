@@ -241,19 +241,33 @@ def show_mask(dset, num_images, model, class_names, fname=''):
     none = []
     imgs = []
 
+    i = 0
     for x, y in iter(dset):
-        imgs.append(x)
-        output, probs = get_mask(model, x)
-        # print(output.shape)
-        if len(output.shape) < 4:
-            output = np.expand_dims(output, 0)
-            probs = np.expand_dims(probs, 0)
-        values.append(probs)
-        masks.append(output[:, :, :, :-1])
-        none.append(output[:, :, :, -1])
-        num_images -= 1
-        if num_images <= 0:
-            break
+        if isinstance(num_images, int):
+            imgs.append(x)
+            output, probs = get_mask(model, x)
+            # print(output.shape)
+            if len(output.shape) < 4:
+                output = np.expand_dims(output, 0)
+                probs = np.expand_dims(probs, 0)
+            values.append(probs)
+            masks.append(output[:, :, :, :-1])
+            none.append(output[:, :, :, -1])
+            num_images -= 1
+            if num_images <= 0:
+                break
+        if isinstance(num_images, list):
+            if i in num_images:
+                imgs.append(x)
+                output, probs = get_mask(model, x)
+                # print(output.shape)
+                if len(output.shape) < 4:
+                    output = np.expand_dims(output, 0)
+                    probs = np.expand_dims(probs, 0)
+                values.append(probs)
+                masks.append(output[:, :, :, :-1])
+                none.append(output[:, :, :, -1])
+            i += 1
 
     # print([mask.shape for mask in masks])
 

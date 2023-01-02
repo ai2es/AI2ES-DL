@@ -9,7 +9,7 @@ def int_act_slip(x):
     # activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
     # this step function has slippery steps
     s = .1
-    m = tf.constant(tf.math.negative(tf.ones_like(x) * (1 + s)))
+    m = tf.math.negative(tf.ones_like(x)) * (1 + s)
     m = tf.math.reciprocal(m)
     xmod1 = tf.math.floormod(x, tf.ones_like(x))
     # three distinguished cases:
@@ -33,7 +33,7 @@ def int_act_no_slip(x):
     # activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
     # this step function has inwardly sloping steps
     s = .1
-    m = tf.constant(tf.math.negative(tf.ones_like(x) * (1 - s)))
+    m = tf.math.negative(tf.ones_like(x) * (1 - s))
     m = tf.math.reciprocal(m)
     xmod1 = tf.math.floormod(x, tf.ones_like(x))
     # three distinguished cases:
@@ -47,7 +47,7 @@ def int_act_no_slip(x):
     cond3 = tf.math.greater_equal(xmod1, .5 + (s / 2))
 
     x = tf.where(cond1, x + (xmod1 * m), x)
-    x = tf.where(cond2, x + ((xmod1 - .5) * (1 / s), x))
+    x = tf.where(cond2, x + ((xmod1 - .5) * (1 / s)), x)
     x = tf.where(cond3, x + (m * (xmod1 - 1)), x)
 
     return x

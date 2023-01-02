@@ -1027,7 +1027,7 @@ def build_camnet_reorderedv4(conv_filters,
 
     model_inputs = Input(image_size)
 
-    base = transformer_unet(16, image_size, n_classes=n_classes, depth=4)
+    base = unet(12, image_size, n_classes=n_classes, depth=4)
 
     masked_pred = mask_plurality(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
     masked_all = mask_total(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])

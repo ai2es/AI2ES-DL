@@ -1,4 +1,4 @@
-from supervised.evaluations.image_classification import show_mask, explain_image_classifier_with_saliency,\
+from supervised.evaluations.image_classification import show_mask, explain_image_classifier_with_saliency, \
     explain_image_classifier_with_shap, explain_image_classifier_with_lime
 
 from supervised.util import load_most_recent_results
@@ -6,6 +6,7 @@ from supervised.util import load_most_recent_results
 import pickle
 import argparse
 import tensorflow as tf
+
 
 def create_parser():
     """
@@ -43,9 +44,9 @@ if __name__ == "__main__":
     test_dset = test_dset.batch(results.config.dataset_params['batch'])
 
     model_data.get_model().evaluate(test_dset, steps=100)
-
     if args.thrifty:
-        show_mask(test_dset, 16, model_data, class_names=class_names)
+        # 11, 18, 20, 10, 5, 56, 21, 41, 43
+        show_mask(test_dset, [18, 20, 10, 11, 95, 56, 21, 41, 43], model_data, class_names=class_names)
 
     if args.lime:
         for x, y in iter(test_dset):
