@@ -1,5 +1,5 @@
 import pickle
-from supervised.util import Experiment
+from util import Experiment
 import argparse
 
 
@@ -21,9 +21,7 @@ if __name__ == "__main__":
     parser = create_parser()
     args = parser.parse_args()
 
-    with open(args.pkl, 'rb') as fp:
+    with open(args.pkl) as fp:
         exp = pickle.load(fp)
-
-    exp.run_args = args
 
     exp.run_array(args.id)

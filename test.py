@@ -1,8 +1,7 @@
 from supervised.util import Config, Experiment, load_most_recent_results
 
 from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reorderedv3, build_camnet_reorderedv4, build_focal_modulator, build_focal_camnet, build_focal_camnetv2,\
-    fast_fourier_transformer
+    build_camnet_reorderedv5, build_camnet_reorderedv4, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
 
 from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from supervised.data_augmentation.msda import mixup_dset, blended_dset
@@ -19,19 +18,19 @@ hardware_params must include:
     'distributed': bool
 """
 hardware_params = {
-    'name': 'G1',
-    'n_gpu': 1,
-    'n_cpu': 12,
+    'name': 'hparam',
+    'n_gpu': 4,
+    'n_cpu': 16,
     'partition': 'ai2es',
-    'nodelist': ['c732', 'c733'],
-    'time': '48:00:00',
-    'memory': 8196,
+    'nodelist': ['c830'],
+    'time': '96:00:00',
+    'memory': 16384,
     # The %04a is translated into a 4-digit number that encodes the SLURM_ARRAY_TASK_ID
     'stdout_path': '/scratch/jroth/supercomputer/text_outputs/exp%01a_stdout_%A.txt',
     'stderr_path': '/scratch/jroth/supercomputer/text_outputs/exp%01a_stderr_%A.txt',
     'email': 'jay.c.rothenberger@ou.edu',
     'dir': '/scratch/jroth/AI2ES-DL/',
-    'array': '[0]'
+    'array': '[0-48%4]'
 }
 """
 network_params must include:
@@ -42,10 +41,10 @@ network_params must include:
             'lrate': float
     'hyperband': bool
 """
-
+image_size = (128, 128, 3)
 
 network_params = {
-    'network_fn': build_camnet_reorderedv4,
+    'network_fn': build_camnet_reorderedv5,
     'network_args': {
         'lrate': 5e-4,
         'depth': 3,
@@ -55,15 +54,17 @@ network_params = {
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': 5e-4,
-        'image_size': (128, 128, 3),
-        'attention_heads': '[4, 4, 4]',
-        'alpha': 1e-5,
-        'beta': 1e-5,
+        'image_size': image_size,
         'l1': None,
         'l2': None,
+        'alpha': [1, 2**(-1), 2**(-3), 2**(-7), 2**(-10), 2**(-13), 0.0],
+        'beta': [1, 2**(-1), 2**(-3), 2**(-7), 2**(-10), 2**(-13), 0.0],
+        'noise_level': 0.005,
+        'depth': 5,
     },
     'hyperband': False
 }
+
 """
 experiment_params must include:
     
@@ -77,11 +78,11 @@ experiment_params must include:
 """
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 1024,
+    'steps_per_epoch': 512,
     'validation_steps': 256,
-    'patience': 8,
+    'patience': 32,
     'min_delta': 0.0,
-    'epochs': 64,
+    'epochs': 256,
     'nogo': False,
 }
 """
@@ -97,12 +98,12 @@ dataset_params must include:
 dataset_params = {
     'dset_fn': dot_dataset,
     'dset_args': {
-        'image_size': (128, 128),
-        'path': '../Semi-supervised/data/'
+        'image_size': image_size[:-1],
+        'path': '../data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 12,
+    'batch': 32,
     'prefetch': 4,
     'shuffle': True,
     'augs': []
@@ -115,6 +116,6 @@ if __name__ == "__main__":
     exp = Experiment(config)
 
     print(exp.params)
-    exp.run_array(0)
+    # exp.run_array(0)
 
     exp.enqueue()
