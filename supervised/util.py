@@ -370,6 +370,10 @@ class Experiment:
         self.batch_file = None
         self.network_params = config.network_params
         self.hardware_params = config.hardware_params
+
+        if self.hardware_params.get('results_dir') is None:
+            self.hardware_params['results_dir'] = 'results'
+
         self.dataset_params = config.dataset_params
         self.params = config.experiment_params
         self.run_args = None
@@ -443,7 +447,7 @@ class Experiment:
                                     train_steps=self.params['steps_per_epoch'])
 
         result = Results(self, model_data)
-        with open(f'{os.curdir}/../results/{generate_fname(self.params)}', 'wb') as fp:
+        with open(f'{os.curdir}/../{self.hardware_params["results_dir"]}/{generate_fname(self.params)}', 'wb') as fp:
             pickle.dump(result, fp)
 
     def run_array(self, index=0):

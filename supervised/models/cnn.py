@@ -10,7 +10,7 @@ import keras.backend as K
 from tensorflow.keras.applications import EfficientNetB0, ResNet50V2, VGG16, MobileNetV3Small
 from time import time
 
-from supervised.models.ae import clam_unet, unet, transformer_unet
+from supervised.models.ae import clam_unet, unet, transformer_unet, vit_unet
 from supervised.models.custom_layers import TFPositionalEncoding2D
 
 """
@@ -1246,3 +1246,401 @@ def fast_fourier_transformer(
 
     return model
 
+
+def build_camnet_reorderedv5(conv_filters,
+                             conv_size,
+                             dense_layers,
+                             learning_rate,
+                             image_size,
+                             iterations=24,
+                             loss='categorical_crossentropy',
+                             l1=None, l2=None,
+                             activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                             n_classes=10,
+                             skips=2,
+                             alpha=1e-3,
+                             beta=1e-3,
+                             noise_level=0.05,
+                             depth=5,
+                             **kwargs):
+    def CE(y_true, y_pred):
+        return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
+
+    def NCE(y_true, y_pred):
+        if tf.shape(y_pred)[-1] > 0:
+            return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
+        
+        else:
+            return tf.expand_dims(tf.math.negative(tf.math.log(0.0)), axis=0)
+
+    def mask_loss(y_true, y_pred):
+        return tf.math.negative(tf.math.log(1 + 2 ** (-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+        
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+        
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    base = transformer_unet(24, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+    masked_all = mask_total(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out])
+
+    # masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    # masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    masked_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {'crossentropy': base_out, 'cosine': masked_pred_out, 'all_masked': masked_all_out}
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, mask_loss, NCE],
+                  loss_weights=[1, alpha, beta],
+                  optimizer=opt,
+                  metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model
+
+
+def build_camnet_reorderedv6(conv_filters,
+                             conv_size,
+                             dense_layers,
+                             learning_rate,
+                             image_size,
+                             iterations=24,
+                             loss='categorical_crossentropy',
+                             l1=None, l2=None,
+                             activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                             n_classes=10,
+                             skips=2,
+                             alpha=1e-3,
+                             beta=1e-3,
+                             noise_level=0.05,
+                             depth=5,
+                             **kwargs):
+    def CE(y_true, y_pred):
+        return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
+
+    def NCE(y_true, y_pred):
+        if tf.shape(y_pred)[-1] > 0:
+            return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
+        
+        else:
+            return tf.expand_dims(tf.math.negative(tf.math.log(0.0)), axis=0)
+
+    def mask_loss(y_true, y_pred):
+        return tf.math.negative(tf.math.log(1 + 2 ** (-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+        
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+        
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    base = transformer_unet(24, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+    masked_all = mask_total(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out])
+
+    masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    masked_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {'crossentropy': base_out, 'cosine': masked_pred_out, 'all_masked': masked_all_out}
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, mask_loss, NCE],
+                  loss_weights=[1, alpha, beta],
+                  optimizer=opt,
+                  metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model
+
+
+def build_camnet_reorderedv7(conv_filters,
+                             conv_size,
+                             dense_layers,
+                             learning_rate,
+                             image_size,
+                             iterations=24,
+                             loss='categorical_crossentropy',
+                             l1=None, l2=None,
+                             activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                             n_classes=10,
+                             skips=2,
+                             alpha=1e-3,
+                             beta=1e-3,
+                             noise_level=0.05,
+                             depth=5,
+                             **kwargs):
+    def CE(y_true, y_pred):
+        return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
+
+    def NCE(y_true, y_pred):
+        if tf.shape(y_pred)[-1] > 0:
+            return tf.math.negative(tf.math.log(tf.reduce_mean(y_pred, axis=-1)) - tf.math.log(tf.reduce_max(y_pred, axis=-1)))
+        
+        else:
+            return tf.expand_dims(tf.math.negative(tf.math.log(0.0)), axis=0)
+
+    def mask_loss(y_true, y_pred):
+        return tf.math.negative(tf.math.log(1 + 2 ** (-16) - tf.reduce_sum(y_pred, keepdims=True, axis=-1)))
+
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+    if isinstance(conv_size, str):
+        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+        
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(image_size, cam_size, pred_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+        
+        batch_mean = tf.reduce_mean(image_inputs, axis=0)
+
+        masker_outputs = z + (m * (batch_mean + tf.random.normal(tf.shape(batch_mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    base = transformer_unet(conv_filters, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+    masked_all = mask_total(image_size, base.outputs[-1].shape[1:], base.outputs[0].shape[1:])
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out])
+
+    # masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    # masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    masked_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {'crossentropy': base_out, 'cosine': masked_pred_out, 'all_masked': masked_all_out}
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, mask_loss, NCE],
+                  loss_weights=[1, alpha, beta],
+                  optimizer=opt,
+                  metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model

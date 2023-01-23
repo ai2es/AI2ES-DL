@@ -19,7 +19,7 @@ hardware_params must include:
 """
 hardware_params = {
     'name': 'hparam',
-    'n_gpu': 4,
+    'n_gpu': 1,
     'n_cpu': 16,
     'partition': 'ai2es',
     'nodelist': ['c830'],
@@ -30,7 +30,8 @@ hardware_params = {
     'stderr_path': '/scratch/jroth/supercomputer/text_outputs/exp%01a_stderr_%A.txt',
     'email': 'jay.c.rothenberger@ou.edu',
     'dir': '/scratch/jroth/AI2ES-DL/',
-    'array': '[0-48%4]'
+    'array': '[0-48%4]',
+    'results_dir': 'results'
 }
 """
 network_params must include:
@@ -48,7 +49,7 @@ network_params = {
     'network_args': {
         'lrate': 5e-4,
         'depth': 3,
-        'n_classes': 3,
+        'n_classes': 9,
         'iterations': 6,
         'conv_filters': '[12]',
         'conv_size': '[3]',
@@ -57,8 +58,8 @@ network_params = {
         'image_size': image_size,
         'l1': None,
         'l2': None,
-        'alpha': [1, 2**(-1), 2**(-3), 2**(-7), 2**(-10), 2**(-13), 0.0],
-        'beta': [1, 2**(-1), 2**(-3), 2**(-7), 2**(-10), 2**(-13), 0.0],
+        'alpha': [2**(-10)],
+        'beta': [.5],
         'noise_level': 0.005,
         'depth': 5,
     },
@@ -96,14 +97,14 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': dot_dataset,
+    'dset_fn': deep_weeds,
     'dset_args': {
         'image_size': image_size[:-1],
         'path': '../data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 32,
+    'batch': 16,
     'prefetch': 4,
     'shuffle': True,
     'augs': []
@@ -116,6 +117,6 @@ if __name__ == "__main__":
     exp = Experiment(config)
 
     print(exp.params)
-    # exp.run_array(0)
+    exp.run_array(0)
 
     exp.enqueue()
