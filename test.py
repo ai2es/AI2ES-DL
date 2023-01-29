@@ -1,11 +1,16 @@
-from supervised.util import Config, Experiment, load_most_recent_results
+from support.util import Config, Experiment
 
-from supervised.models.cnn import build_EfficientNetB0, build_camnetv2, build_camnet, build_basic_cnn,\
-    build_camnet_reorderedv5, build_camnet_reorderedv4, build_focal_modulator, build_focal_camnet, build_focal_camnetv2
+from trainable.models.vit import build_focal_LAXNet
 
-from supervised.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
-from supervised.data_augmentation.msda import mixup_dset, blended_dset
-from supervised.data_augmentation.ssda import add_gaussian_noise_dset, custom_rand_augment_dset, foff_dset
+from data.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
+from optimization.data_augmentation.msda import mixup_dset, blended_dset
+from optimization.data_augmentation.ssda import add_gaussian_noise_dset, custom_rand_augment_dset, foff_dset
+
+from tensorflow.keras.callbacks import LearningRateScheduler
+from optimization.callbacks import EarlyStoppingDifference
+
+from optimization.training_loops.supervised import keras_supervised
+from optimization.schedules import bleed_out
 """
 hardware_params must include:
 
@@ -22,7 +27,7 @@ hardware_params = {
     'n_gpu': 1,
     'n_cpu': 16,
     'partition': 'ai2es',
-    'nodelist': ['c830'],
+    'nodelist': ['c732'],
     'time': '96:00:00',
     'memory': 16384,
     # The %04a is translated into a 4-digit number that encodes the SLURM_ARRAY_TASK_ID
@@ -30,7 +35,7 @@ hardware_params = {
     'stderr_path': '/scratch/jroth/supercomputer/text_outputs/exp%01a_stderr_%A.txt',
     'email': 'jay.c.rothenberger@ou.edu',
     'dir': '/scratch/jroth/AI2ES-DL/',
-    'array': '[0-48%4]',
+    'array': '[1]',
     'results_dir': 'results'
 }
 """
@@ -45,23 +50,22 @@ network_params must include:
 image_size = (128, 128, 3)
 
 network_params = {
-    'network_fn': build_camnet_reorderedv5,
+    'network_fn': build_focal_LAXNet,
     'network_args': {
         'lrate': 5e-4,
-        'depth': 3,
-        'n_classes': 9,
+        'n_classes': 2,
         'iterations': 6,
-        'conv_filters': '[12]',
+        'conv_filters': 24,
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
-        'learning_rate': 5e-4,
+        'learning_rate': [5e-4],
         'image_size': image_size,
         'l1': None,
         'l2': None,
-        'alpha': [2**(-10)],
-        'beta': [.5],
+        'alpha': [1, 2**(-10)],
+        'beta': [2**(-7)],
         'noise_level': 0.005,
-        'depth': 5,
+        'depth': 4,
     },
     'hyperband': False
 }
@@ -77,6 +81,8 @@ experiment_params must include:
     'epochs': uint
     'nogo': bool
 """
+
+
 experiment_params = {
     'seed': 42,
     'steps_per_epoch': 512,
@@ -97,26 +103,42 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': deep_weeds,
+    'dset_fn': cats_dogs,
     'dset_args': {
         'image_size': image_size[:-1],
         'path': '../data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 16,
+    'batch': 2,
     'prefetch': 4,
     'shuffle': True,
-    'augs': []
+    'augs': [custom_rand_augment_dset, add_gaussian_noise_dset]
 }
 
-config = Config(hardware_params, network_params, dataset_params, experiment_params)
+optimization_params = {
+    'callbacks': [
+        EarlyStoppingDifference(patience=experiment_params['patience'],
+                                restore_best_weights=True,
+                                min_delta=experiment_params['min_delta'],
+                                metric_0='val_clam_categorical_accuracy',
+                                metric_1='val_clam_1_categorical_accuracy',
+                                n_classes=2),
+
+        LearningRateScheduler(bleed_out(network_params['network_args']['learning_rate'])),
+        # LossWeightScheduler(loss_weight_schedule)
+    ],
+    'training_loop': keras_supervised
+}
+
+config = Config(hardware_params, network_params, dataset_params, experiment_params, optimization_params)
+
 
 if __name__ == "__main__":
 
     exp = Experiment(config)
 
-    print(exp.params)
+    # print(exp.params)
     exp.run_array(0)
 
     exp.enqueue()
