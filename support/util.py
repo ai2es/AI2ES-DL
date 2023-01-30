@@ -38,6 +38,8 @@ class Config:
         self.dataset_params = obj.dataset_params
         self.experiment_params = obj.experiment_params
         self.optimization_params = obj.optimization_params
+        if self.optimization_params['callbacks']:
+            print("Note that callbacks cannot be serialized, so string representations were serialized instead")
 
 
 class Results:
@@ -49,10 +51,21 @@ class Results:
     """
 
     def __init__(self, experiment, model_data):
-        self.config = Config(experiment.hardware_params, experiment.network_params,
-                             experiment.dataset_params, experiment.params)
+        self.config = Config(
+                             experiment.hardware_params,
+                             experiment.network_params,
+                             experiment.dataset_params,
+                             experiment.params,
+                             experiment.optimization_params
+                             )
         self.experiment = experiment
         self.model_data = model_data
+
+        self.config.optimization_params['callbacks'] = [str(callback) for callback in self.config.optimization_params['callbacks']]
+        self.experiment.optimization_params['callbacks'] = [str(callback) for callback in self.experiment.optimization_params['callbacks']]
+
+        if self.config.optimization_params['callbacks'] or self.experiment.optimization_params['callbacks']:
+            print("Note that callbacks cannot be serialized, so string representations will be serialized instead")
 
     def summary(self):
         metrics = [key for key in self.model_data.history]

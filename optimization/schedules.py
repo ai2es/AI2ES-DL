@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 def bleed_out(lrate=1e-3):
     def schedule(index, lrate=1e-3, minimum=1e-3):
         # Oscillating learning rate schedule
@@ -8,6 +9,7 @@ def bleed_out(lrate=1e-3):
         x = index + 1
         frac = (1 - minimum) / x ** (1 - sin(2 * pi * (x ** .5)))
         return min(lrate * (frac + minimum), 1)
+
     return schedule
 
 
@@ -25,10 +27,11 @@ def cyclical_adv_lrscheduler25(lrate=1e-3):
             return base_learning * (1 + 0.5 * local_epoch)
         else:
             return (base_learning * 4) * (0.85 ** (local_epoch - 7))
+
     return schedule
 
 
-def diffusion_schedule(diffusion_times, min_signal_rate = 0.02, max_signal_rate = 0.95):
+def diffusion_schedule(diffusion_times, min_signal_rate=0.02, max_signal_rate=0.95):
     # diffusion times -> angles
     start_angle = tf.acos(max_signal_rate)
     end_angle = tf.acos(min_signal_rate)

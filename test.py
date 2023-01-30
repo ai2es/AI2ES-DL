@@ -55,7 +55,7 @@ network_params = {
     'network_fn': build_basic_convnextv2,
     'network_args': {
         'lrate': 5e-4,
-        'n_classes': 2,
+        'n_classes': 4,
         'iterations': 6,
         'conv_filters': '[12, 24, 32]',
         'conv_size': '[3]',
@@ -87,11 +87,11 @@ experiment_params must include:
 
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 512,
+    'steps_per_epoch': 1,
     'validation_steps': 256,
     'patience': 3,
     'min_delta': 0.0,
-    'epochs': 15,
+    'epochs': 1,
     'nogo': False,
 }
 """
@@ -105,7 +105,7 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': cats_dogs,
+    'dset_fn': citrus_leaves,
     'dset_args': {
         'image_size': image_size[:-1],
         'path': '../data/'
@@ -115,7 +115,7 @@ dataset_params = {
     'batch': 16,
     'prefetch': 4,
     'shuffle': True,
-    'augs': [custom_rand_augment_dset, add_gaussian_noise_dset]
+    'augs': []
 }
 
 optimization_params = {
@@ -143,4 +143,4 @@ if __name__ == "__main__":
     # print(exp.params)
     exp.run_array(0)
 
-    exp.enqueue()
+    # exp.enqueue()
