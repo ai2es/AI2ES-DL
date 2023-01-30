@@ -3,8 +3,8 @@ import numpy as np
 from time import time
 
 from tensorflow.keras.layers import Flatten, Conv2D, Dense, Input, Concatenate, Dropout, \
-    BatchNormalization, DepthwiseConv2D, GlobalAveragePooling2D, Multiply, LayerNormalization, Add,\
-    UpSampling2D
+    BatchNormalization, DepthwiseConv2D, GlobalAveragePooling2D, Multiply, LayerNormalization, Add, \
+    UpSampling2D, Lambda
 
 from trainable.activations import hardswish
 
@@ -107,7 +107,7 @@ class PCA(tf.keras.layers.Layer):
         self.Q = None
 
     def build(self, input_shape):
-        self.Q = tf.Variable(self.Q_init((tf.reduce_prod(input_shape)[1:], self.num_outputs)))
+        self.Q = tf.Variable(self.Q_init((tf.reduce_prod(input_shape)[1:], self.num_outputs)), trainable=False)
 
     def call(self, inputs, training=None):
         input_shape = tf.shape(inputs)
@@ -157,7 +157,7 @@ class PCACompress(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         input_shape = tf.reduce_prod(input_shape[1:])
-        self.Q = tf.Variable(self.Q_init((input_shape, self.num_outputs)))
+        self.Q = tf.Variable(self.Q_init((input_shape, self.num_outputs)), trainable=False)
 
     def call(self, inputs, training=None):
         input_shape = tf.shape(inputs)
@@ -261,3 +261,113 @@ def custom_focal_module(input_shape, units, focal_depth):
 
     model.compile()
     return model
+
+
+def ConvNeXt_block(filters, l1=None, l2=None):
+    """
+    ConvNeXt block from https://arxiv.org/pdf/2201.03545.pdf
+
+    :param filters: channels in the input and output of the convolution
+    :param l1: l1 regularization weight
+    :param l2: l2 regularization weight
+    :return: a keras layer
+    """
+
+    def module(x):
+
+        conv_params = {
+            'use_bias': False,
+            'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+            'bias_initializer': 'zeros',
+            'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+            'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+            'padding': 'same'
+        }
+
+        inputs = x
+
+        x = DepthwiseConv2D(7, **conv_params)(inputs)
+
+        x = LayerNormalization()(x)
+
+        x = Conv2D(x.shape[-1] * 4, 1, activation=hardswish, **conv_params)(x)
+
+        x = Conv2D(filters, 1, **conv_params)(x)
+
+        outputs = inputs + x
+
+        return outputs
+
+    return module
+
+
+def GRN(X, gamma, beta, p=2):
+    gx = tf.norm(X, ord=p, axis=1, keepdims=True)
+    gx = tf.norm(gx, ord=p, axis=2, keepdims=True)
+    nx = gx / (tf.reduce_mean(gx, axis=-1, keepdims=True) + 1e-6)
+    return gamma * (X * nx) + beta + X
+
+
+class GlobalResponseNormalization(tf.keras.layers.Layer):
+    """
+    Global Response Normalization defined in https://arxiv.org/pdf/2301.00808.pdf
+
+    inputs: a batch of n-D vectors
+    outputs: a batch of 1-D vectors in PC coordinate space
+    """
+
+    def __init__(self, p=2):
+        super(GlobalResponseNormalization, self).__init__()
+        self.p = p
+        self.gamma = None
+        self.beta = None
+
+    def build(self, input_shape):
+        self.gamma = tf.Variable(.5, trainable=True)
+        self.beta = tf.Variable(.5, trainable=True)
+
+    def call(self, inputs, training=None):
+
+        return GRN(inputs, self.gamma, self.beta, self.p)
+
+    def get_config(self):
+        return {"gamma": self.gamma.numpy(), "beta": self.beta.numpy()}
+
+
+def ConvNeXtV2_block(filters, l1=None, l2=None):
+    """
+    ConvNeXtV2 block from https://arxiv.org/pdf/2301.00808.pdf
+
+    :param filters: channels in the input and output of the convolution
+    :param l1: l1 regularization weight
+    :param l2: l2 regularization weight
+    :return: a keras layer
+    """
+
+    def module(x):
+        conv_params = {
+            'use_bias': False,
+            'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+            'bias_initializer': 'zeros',
+            'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+            'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+            'padding': 'same'
+        }
+
+        inputs = x
+
+        x = DepthwiseConv2D(7, **conv_params)(x)
+
+        x = LayerNormalization()(x)
+
+        x = Conv2D(x.shape[-1] * 4, 1, activation=hardswish, **conv_params)(x)
+
+        x = GlobalResponseNormalization()(x)
+
+        x = Conv2D(filters, 1, **conv_params)(x)
+
+        outputs = inputs + x
+
+        return outputs
+
+    return module

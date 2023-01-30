@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 def bleed_out(lrate=1e-3):
     def schedule(index, lrate=1e-3, minimum=1e-3):
         # Oscillating learning rate schedule
@@ -24,3 +26,19 @@ def cyclical_adv_lrscheduler25(lrate=1e-3):
         else:
             return (base_learning * 4) * (0.85 ** (local_epoch - 7))
     return schedule
+
+
+def diffusion_schedule(diffusion_times, min_signal_rate = 0.02, max_signal_rate = 0.95):
+    # diffusion times -> angles
+    start_angle = tf.acos(max_signal_rate)
+    end_angle = tf.acos(min_signal_rate)
+
+    diffusion_angles = start_angle + diffusion_times * (end_angle - start_angle)
+
+    # angles -> signal and noise rates
+    signal_rates = tf.cos(diffusion_angles)
+    noise_rates = tf.sin(diffusion_angles)
+    # note that their squared sum is always: sin^2(x) + cos^2(x) = 1
+    # this is theoretically a necessary property, although I suspect only if you are using MSE
+
+    return noise_rates, signal_rates

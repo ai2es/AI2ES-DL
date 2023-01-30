@@ -1,6 +1,8 @@
 from support.util import Config, Experiment
 
 from trainable.models.vit import build_focal_LAXNet
+from trainable.models.cnn import build_basic_convnextv2, build_basic_cnn
+
 
 from data.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
 from optimization.data_augmentation.msda import mixup_dset, blended_dset
@@ -50,12 +52,12 @@ network_params must include:
 image_size = (128, 128, 3)
 
 network_params = {
-    'network_fn': build_focal_LAXNet,
+    'network_fn': build_basic_convnextv2,
     'network_args': {
         'lrate': 5e-4,
         'n_classes': 2,
         'iterations': 6,
-        'conv_filters': 24,
+        'conv_filters': '[12, 24, 32]',
         'conv_size': '[3]',
         'dense_layers': '[32, 16]',
         'learning_rate': [5e-4],
@@ -87,9 +89,9 @@ experiment_params = {
     'seed': 42,
     'steps_per_epoch': 512,
     'validation_steps': 256,
-    'patience': 32,
+    'patience': 3,
     'min_delta': 0.0,
-    'epochs': 256,
+    'epochs': 15,
     'nogo': False,
 }
 """
@@ -110,7 +112,7 @@ dataset_params = {
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 2,
+    'batch': 16,
     'prefetch': 4,
     'shuffle': True,
     'augs': [custom_rand_augment_dset, add_gaussian_noise_dset]
@@ -118,12 +120,12 @@ dataset_params = {
 
 optimization_params = {
     'callbacks': [
-        EarlyStoppingDifference(patience=experiment_params['patience'],
-                                restore_best_weights=True,
-                                min_delta=experiment_params['min_delta'],
-                                metric_0='val_clam_categorical_accuracy',
-                                metric_1='val_clam_1_categorical_accuracy',
-                                n_classes=2),
+        # EarlyStoppingDifference(patience=experiment_params['patience'],
+        #                        restore_best_weights=True,
+        #                        min_delta=experiment_params['min_delta'],
+        #                        metric_0='val_clam_categorical_accuracy',
+        #                        metric_1='val_clam_1_categorical_accuracy',
+        #                        n_classes=2),
 
         LearningRateScheduler(bleed_out(network_params['network_args']['learning_rate'])),
         # LossWeightScheduler(loss_weight_schedule)
