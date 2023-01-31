@@ -1,6 +1,6 @@
 from support.util import Config, Experiment
 
-from trainable.models.vit import build_focal_LAXNet
+from trainable.models.vit import build_focal_LAXNet, build_basic_lunchbox
 from trainable.models.cnn import build_basic_convnextv2, build_basic_cnn
 
 
@@ -52,14 +52,14 @@ network_params must include:
 image_size = (128, 128, 3)
 
 network_params = {
-    'network_fn': build_basic_convnextv2,
+    'network_fn': build_basic_lunchbox,
     'network_args': {
         'lrate': 5e-4,
-        'n_classes': 4,
+        'n_classes': 2,
         'iterations': 6,
-        'conv_filters': '[12, 24, 32]',
+        'conv_filters': '[32, 48, 64, 96]',
         'conv_size': '[3]',
-        'dense_layers': '[32, 16]',
+        'dense_layers': '[16]',
         'learning_rate': [5e-4],
         'image_size': image_size,
         'l1': None,
@@ -87,11 +87,11 @@ experiment_params must include:
 
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 1,
+    'steps_per_epoch': 512,
     'validation_steps': 256,
     'patience': 3,
     'min_delta': 0.0,
-    'epochs': 1,
+    'epochs': 64,
     'nogo': False,
 }
 """
@@ -105,14 +105,14 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': citrus_leaves,
+    'dset_fn': cats_dogs,
     'dset_args': {
         'image_size': image_size[:-1],
         'path': '../data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 16,
+    'batch': 64,
     'prefetch': 4,
     'shuffle': True,
     'augs': []

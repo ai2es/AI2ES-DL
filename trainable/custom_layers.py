@@ -274,7 +274,6 @@ def ConvNeXt_block(filters, l1=None, l2=None):
     """
 
     def module(x):
-
         conv_params = {
             'use_bias': False,
             'kernel_initializer': tf.keras.initializers.GlorotUniform(),
@@ -327,7 +326,6 @@ class GlobalResponseNormalization(tf.keras.layers.Layer):
         self.beta = tf.Variable(.5, trainable=True)
 
     def call(self, inputs, training=None):
-
         return GRN(inputs, self.gamma, self.beta, self.p)
 
     def get_config(self):
@@ -371,3 +369,65 @@ def ConvNeXtV2_block(filters, l1=None, l2=None):
         return outputs
 
     return module
+
+
+class LunchboxMHSA(tf.keras.layers.Layer):
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 lunchbox_dim,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 attn_drop=0.,
+                 proj_drop=0.,
+                 prefix=''):
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.lunchbox_dim = lunchbox_dim
+
+        self.scale = qk_scale or max(dim, lunchbox_dim) ** -0.5
+        self.prefix = prefix
+
+        self.qkv = Dense(dim * 2 * num_heads, use_bias=qkv_bias,
+                         name=f'{self.prefix}/attn/qkv')
+        self.attn_drop = Dropout(attn_drop)
+        self.proj = Dense(dim, name=f'{self.prefix}/attn/proj')
+        self.proj_drop = Dropout(proj_drop)
+        self.k = None
+        self.built = False
+
+    def build(self, input_shape):
+        self.k = self.add_weight(f'{self.prefix}/attn/lunchbox',
+                                 shape=(self.dim, self.lunchbox_dim),
+                                 initializer=tf.initializers.GlorotUniform(), trainable=True)
+        self.built = True
+
+    def call(self, x):
+        B_, N, C = x.get_shape().as_list()
+
+        # x = tf.reshape(x, (B_, N, C))
+
+        x = self.qkv(x)
+        x = tf.transpose(x, perm=[0, 2, 1])
+
+        x = tf.reshape(x, (-1, 2, self.num_heads, self.dim, N))
+        qv = tf.transpose(x, perm=[1, 0, 2, 3, 4])
+
+        q, v = qv[0], qv[1]
+
+        attn = tf.einsum('bikj,kr->birk', q, self.k)
+        attn = attn * self.scale
+        tf.nn.softmax(attn, -1)
+
+        res = tf.einsum('birk,bikn->bink', attn, v)
+
+        x = tf.reshape(res, (-1, N, self.num_heads * self.dim))
+
+        x = self.proj(x)
+        x = self.proj_drop(x)
+
+        return x
+
+    def get_config(self):
+        return {"k": self.k.numpy()}

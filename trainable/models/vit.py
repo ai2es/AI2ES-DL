@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout,\
     BatchNormalization, GlobalMaxPooling2D, Multiply, LayerNormalization, MultiHeadAttention, Reshape, Add
 
-from trainable.custom_layers import TFPositionalEncoding2D, focal_module
+from trainable.custom_layers import TFPositionalEncoding2D, focal_module, LunchboxMHSA, GlobalResponseNormalization
 from trainable.losses import identity, logsum, CE, NCE
 
 from trainable.models.ae import transformer_unet, vit_unet
@@ -358,5 +358,74 @@ def build_focal_LAXNet(conv_filters,
                   loss_weights=[1, alpha, beta, gamma],
                   optimizer=opt,
                   metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model
+
+
+def build_basic_lunchbox(conv_filters,
+                         dense_layers,
+                         learning_rate,
+                         image_size,
+                         loss='categorical_crossentropy',
+                         l1=None,
+                         l2=None,
+                         activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                         n_classes=10,
+                         **kwargs):
+
+    conv_params = {
+        'use_bias': False,
+        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'bias_initializer': 'zeros',
+        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+        'padding': 'same'
+    }
+
+    if isinstance(conv_filters, str):
+        conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
+
+    if isinstance(dense_layers, str):
+        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+
+    inputs = Input(image_size)
+
+    x = inputs
+
+    x = Conv2D(32, 4, 4, **conv_params)(x)
+
+    for block in conv_filters:
+        w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
+        x = LayerNormalization()(x)
+
+        x = Reshape((w * h, ch))(x)
+        x = LunchboxMHSA(block, 4, int(block * 2))(x)
+        x = Reshape((w, h, block))(x)
+
+        x = MaxPooling2D(2)(x)
+
+    # this dense operation is over an input tensor of size (batch, width, height, channels)
+    # semantic segmentation output with extra (irrelevant) channel
+    x = GlobalMaxPooling2D()(x)
+
+    for units in dense_layers:
+        x = Dense(units, activation=activation, use_bias=False)(x)
+
+    outputs = Dense(n_classes, activation='softmax', use_bias=False)(x)
+
+    accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'thrifty_model_{"%02d" % time()}')
+
+    model.compile(loss=loss,
+                  optimizer=opt,
+                  metrics=[accuracy])
 
     return model
