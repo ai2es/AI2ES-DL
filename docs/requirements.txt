@@ -10,3 +10,4 @@ scikit_learn
 shap
 tensorflow
 tensorflow_datasets
+renku-sphinx-theme
