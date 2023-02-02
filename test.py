@@ -2,9 +2,10 @@ from support.util import Config, Experiment
 
 from trainable.models.vit import build_focal_LAXNet, build_basic_lunchbox
 from trainable.models.cnn import build_basic_convnextv2, build_basic_cnn
-
+from trainable.models.ae import lunchbox_packer, lunchbox_packerv2
 
 from data.datasets.image_classification import deep_weeds, cats_dogs, dot_dataset, citrus_leaves
+from data.datasets.image_to_image import cifar10
 from optimization.data_augmentation.msda import mixup_dset, blended_dset
 from optimization.data_augmentation.ssda import add_gaussian_noise_dset, custom_rand_augment_dset, foff_dset
 
@@ -49,15 +50,15 @@ network_params must include:
             'lrate': float
     'hyperband': bool
 """
-image_size = (128, 128, 3)
+image_size = (32, 32, 3)
 
 network_params = {
-    'network_fn': build_basic_lunchbox,
+    'network_fn': lunchbox_packerv2,
     'network_args': {
-        'lrate': 5e-4,
+        'lrate': 1e-6,
         'n_classes': 2,
         'iterations': 6,
-        'conv_filters': '[32, 48, 64, 96]',
+        'conv_filters': 24,
         'conv_size': '[3]',
         'dense_layers': '[16]',
         'learning_rate': [5e-4],
@@ -67,7 +68,7 @@ network_params = {
         'alpha': [1, 2**(-10)],
         'beta': [2**(-7)],
         'noise_level': 0.005,
-        'depth': 4,
+        'depth': 3,
     },
     'hyperband': False
 }
@@ -105,14 +106,14 @@ dataset_params must include:
     'augs': iterable of data augmentation functions
 """
 dataset_params = {
-    'dset_fn': cats_dogs,
+    'dset_fn': cifar10,
     'dset_args': {
         'image_size': image_size[:-1],
         'path': '../data/'
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 64,
+    'batch': 32,
     'prefetch': 4,
     'shuffle': True,
     'augs': []

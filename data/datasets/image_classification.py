@@ -179,3 +179,72 @@ def circles_squares(image_size=(128, 128, 3), **kwargs):
     ds = tf.data.Dataset.from_tensor_slices((x_train, y_train))
 
     return {'train': ds, 'val': val, 'test': test, 'class_names': ['square', 'circle']}
+
+
+def cifar10(image_size=(32, 32, 3), center=True, **kwargs):
+
+    ds = tfds.load('cifar10', split='train', as_supervised=True)
+    val = tfds.load('cifar10', split='train[80%:]', as_supervised=True)
+    test = tfds.load('cifar10', split='test', as_supervised=True)
+
+    def preprocess_image(x, y):
+        """
+        Load in image from filename and resize to target shape.
+        """
+        image = tf.image.convert_image_dtype(x, tf.float32)
+        image = tf.image.resize(image, (image_size[0], image_size[1]))
+        if center:
+            image = image - tf.reduce_mean(image)
+
+        label = tf.one_hot(y, 10, dtype=tf.float32)
+
+        return image, label
+
+    ds = ds.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    val = val.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    test = test.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    return {'train': ds, 'val': val, 'test': test, 'class_names': [str(i) for i in range(10)]}
+
+
+def cifar100(image_size=(32, 32, 3), center=True, **kwargs):
+
+    ds = tfds.load('cifar100', split='train', as_supervised=True)
+    val = tfds.load('cifar100', split='train[80%:]', as_supervised=True)
+    test = tfds.load('cifar100', split='test', as_supervised=True)
+
+    def preprocess_image(x, y):
+        """
+        Load in image from filename and resize to target shape.
+        """
+        image = tf.image.convert_image_dtype(x, tf.float32)
+        image = tf.image.resize(image, (image_size[0], image_size[1]))
+        if center:
+            image = image - tf.reduce_mean(image)
+
+        label = tf.one_hot(y, 100, dtype=tf.float32)
+
+        return image, label
+
+    ds = ds.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    val = val.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    test = test.map(
+        lambda x, y: tf.py_function(preprocess_image, inp=[x, y], Tout=(tf.float32, tf.float32)),
+        num_parallel_calls=tf.data.AUTOTUNE)
+
+    return {'train': ds, 'val': val, 'test': test, 'class_names': [str(i) for i in range(100)]}
+

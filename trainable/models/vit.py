@@ -5,7 +5,8 @@ import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout,\
     BatchNormalization, GlobalMaxPooling2D, Multiply, LayerNormalization, MultiHeadAttention, Reshape, Add
 
-from trainable.custom_layers import TFPositionalEncoding2D, focal_module, LunchboxMHSA, GlobalResponseNormalization
+from trainable.custom_layers import TFPositionalEncoding2D, focal_module, GlobalResponseNormalization
+from trainable.custom_layers import VLunchboxMHSA as LunchboxMHSA
 from trainable.losses import identity, logsum, CE, NCE
 
 from trainable.models.ae import transformer_unet, vit_unet
@@ -399,10 +400,9 @@ def build_basic_lunchbox(conv_filters,
         x = LayerNormalization()(x)
 
         x = Reshape((w * h, ch))(x)
-        x = LunchboxMHSA(block, 4, int(block * 2))(x)
-        x = Reshape((w, h, block))(x)
+        x = LunchboxMHSA(block, 4, (w * h) // 4)(x)
+        x = Reshape((w // 2, h // 2, block))(x)
 
-        x = MaxPooling2D(2)(x)
 
     # this dense operation is over an input tensor of size (batch, width, height, channels)
     # semantic segmentation output with extra (irrelevant) channel

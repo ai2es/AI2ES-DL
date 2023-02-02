@@ -8,6 +8,8 @@ from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input,
     Conv2DTranspose, AveragePooling2D, Multiply, Activation
 from trainable.custom_layers import TFPositionalEncoding2D
 
+from trainable.custom_layers import VLunchboxMHSA, QLunchboxMHSA, DarkLunchboxMHSA
+
 from time import time
 from trainable.activations import hardswish
 
@@ -354,4 +356,101 @@ def vit_unet(conv_filters,
     model = tf.keras.Model(inputs=[inputs], outputs=[out, idk, cam],
                            name=f'clam')
 
+    return model
+
+
+def lunchbox_packer(conv_filters,
+                    image_size,
+                    depth=3,
+                    learning_rate=1e-3,
+                    **kwargs):
+    inputs = Input(image_size)
+
+    x = inputs
+
+    for i in range(depth):
+        w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
+        x = LayerNormalization()(x)
+
+        x = Reshape((w * h, ch))(x)
+        x = LunchboxMHSA(conv_filters, 4, (w * h) // 4)(x)
+        x = Reshape((w // 2, h // 2, conv_filters))(x)
+
+    w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
+    x = LayerNormalization()(x)
+    x = Reshape((w * h, ch))(x)
+    x = LunchboxMHSA(conv_filters, 4, (w * h))(x)
+    x = Reshape((w, h, conv_filters))(x)
+
+    for i in range(depth)[::-1]:
+        w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
+        x = LayerNormalization()(x)
+        x = Reshape((w * h, ch))(x)
+        x = LunchboxMHSA(conv_filters, 4, (w * h) * 4)(x)
+        x = Reshape((w * 2, h * 2, conv_filters))(x)
+
+    outputs = Dense(3)(x)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'lunchbox_ae')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss='mae',
+                  optimizer=opt)
+    return model
+
+
+def lunchbox_packerv2(conv_filters,
+                    image_size,
+                    depth=3,
+                    learning_rate=1e-3,
+                    **kwargs):
+    inputs = Input(image_size)
+
+    x = inputs
+
+    # x = Conv2D(24, 2, 2, **conv_params)(x)
+    w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
+    x = Reshape((w * h, ch))(x)
+
+    for i in range(depth):
+        x = MultiHeadAttention(4,
+                               conv_filters,
+                               conv_filters,
+                               )(x, x, x)
+        x = QLunchboxMHSA(conv_filters, 8, x.shape[1] // 2)(x)
+        x = LayerNormalization()(x)
+
+    x = MultiHeadAttention(4,
+                           conv_filters,
+                           conv_filters,
+                           )(x, x, x)
+
+    for i in range(depth)[::-1]:
+        x = LayerNormalization()(x)
+        x = MultiHeadAttention(4,
+                               conv_filters,
+                               conv_filters,
+                               )(x, x, x)
+        x = QLunchboxMHSA(conv_filters, 8, x.shape[1] * 2)(x)
+
+    x = Dense(ch)(x)
+    outputs = Reshape((w, h, ch))(x)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
+                           name=f'lunchbox_ae')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss='mae',
+                  optimizer=opt)
     return model

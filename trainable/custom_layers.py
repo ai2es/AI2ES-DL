@@ -371,60 +371,427 @@ def ConvNeXtV2_block(filters, l1=None, l2=None):
     return module
 
 
-class LunchboxMHSA(tf.keras.layers.Layer):
+class QLunchboxMHSA(tf.keras.layers.Layer):
     def __init__(self,
                  dim,
                  num_heads,
                  lunchbox_dim,
+                 unpacked=False,
                  qkv_bias=True,
                  qk_scale=None,
-                 attn_drop=0.,
                  proj_drop=0.,
                  prefix=''):
+        """
+        Dot product self-attention where the K table is a matrix of learnable
+        parameters.  We use the 'Lunchbox' metaphor within this layer where the
+        lunchbox is K, and the savory lunchtime treats are the columns of K.
+        Packing is intended to refer to a stage of transfer learning wherein the
+        weights that form K are learned from an external task.  The lunchbox
+        is considered 'packed' after learning on the external task, and 'unpacked'
+        during training on the external task.  Call .pack() to freeze K, call
+        .unpack() to unfreeze them.
+
+        :param dim: embedding dimension for k, q, v
+        :param num_heads: number of attention heads
+        :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
+        :param qkv_bias: whether or not to use bias in the initial projection to dim
+        :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
+        :param proj_drop: dropout rate for output
+        :param prefix: name of this layer
+        """
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
         self.lunchbox_dim = lunchbox_dim
+        self.qkv_bias = qkv_bias
 
         self.scale = qk_scale or max(dim, lunchbox_dim) ** -0.5
         self.prefix = prefix
 
-        self.qkv = Dense(dim * 2 * num_heads, use_bias=qkv_bias,
-                         name=f'{self.prefix}/attn/qkv')
-        self.attn_drop = Dropout(attn_drop)
-        self.proj = Dense(dim, name=f'{self.prefix}/attn/proj')
+        self.qkv = None
+
+        self.proj = None
         self.proj_drop = Dropout(proj_drop)
-        self.k = None
+        self.q = None
         self.built = False
+        self.packed = not unpacked
 
     def build(self, input_shape):
-        self.k = self.add_weight(f'{self.prefix}/attn/lunchbox',
-                                 shape=(self.dim, self.lunchbox_dim),
-                                 initializer=tf.initializers.GlorotUniform(), trainable=True)
+        self.q = self.add_weight(f'{self.prefix}/attn/lunchbox',
+                                 shape=(self.dim, self.num_heads, self.lunchbox_dim),
+                                 initializer=tf.initializers.LecunNormal(),
+                                 trainable=self.packed)
+
+        self.proj = self.add_weight(f'{self.prefix}/attn/proj',
+                                    shape=(self.num_heads * self.dim, self.dim),
+                                    initializer=tf.initializers.LecunNormal(),
+                                    trainable=True)
+
+        self.qkv = self.add_weight(f'{self.prefix}/attn/qkv',
+                                   shape=(input_shape[-1], self.dim * 2 * self.num_heads),
+                                   initializer=tf.initializers.LecunNormal(),
+                                   trainable=True)
+
         self.built = True
+
+    def pack(self):
+        # make the table untrainable
+        self.q = tf.Variable(self.q, trainable=False)
+
+    def unpack(self):
+        # make the table trainable
+        self.q = tf.Variable(self.q, trainable=True)
 
     def call(self, x):
         B_, N, C = x.get_shape().as_list()
 
         # x = tf.reshape(x, (B_, N, C))
+        # (b, n, ch), (ch, dim) -> (b, n, dim * 2 * h)
+        x = tf.einsum('bnc,cd->bnd', x, self.qkv)
 
-        x = self.qkv(x)
-        x = tf.transpose(x, perm=[0, 2, 1])
+        x = tf.reshape(x, (-1, N, self.num_heads, 2, self.dim))
+        qv = tf.transpose(x, perm=[3, 0, 1, 2, 4])
 
-        x = tf.reshape(x, (-1, 2, self.num_heads, self.dim, N))
-        qv = tf.transpose(x, perm=[1, 0, 2, 3, 4])
-
-        q, v = qv[0], qv[1]
-
-        attn = tf.einsum('bikj,kr->birk', q, self.k)
+        k, v = qv[0], qv[1]
+        # batch, n, num_heads, dim x dim, lunchbox_dim -> batch, n, num_heads, lunchbox_dim
+        attn = tf.einsum('bnik,kir->bnir', k, self.q)
         attn = attn * self.scale
         tf.nn.softmax(attn, -1)
 
-        res = tf.einsum('birk,bikn->bink', attn, v)
+        attn = tf.einsum('bnir->birn', attn)
+        v = tf.einsum('bnik->bikn', v)
 
-        x = tf.reshape(res, (-1, N, self.num_heads * self.dim))
+        res = tf.einsum('birn,bikn->birk', attn, v)
 
-        x = self.proj(x)
+        res = tf.einsum('birk->brik', res)
+
+        x = tf.reshape(res, (-1, self.lunchbox_dim, self.num_heads * self.dim))
+
+        # (b, n, dim * n_h), (ch, dim) -> (b, n, dim)
+        x = tf.einsum('bnc,cd->bnd', x, self.proj)
+
+        x = self.proj_drop(x)
+
+        return x
+
+    def get_config(self):
+        return {"q": self.q.numpy()}
+
+
+class VLunchboxMHSA(tf.keras.layers.Layer):
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 lunchbox_dim,
+                 unpacked=False,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 proj_drop=0.,
+                 prefix=''):
+        """
+        Dot product self-attention where the K table is a matrix of learnable
+        parameters.  We use the 'Lunchbox' metaphor within this layer where the
+        lunchbox is K, and the savory lunchtime treats are the columns of K.
+        Packing is intended to refer to a stage of transfer learning wherein the
+        weights that form K are learned from an external task.  The lunchbox
+        is considered 'packed' after learning on the external task, and 'unpacked'
+        during training on the external task.  Call .pack() to freeze K, call
+        .unpack() to unfreeze them.
+
+        :param dim: embedding dimension for k, q, v
+        :param num_heads: number of attention heads
+        :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
+        :param qkv_bias: whether or not to use bias in the initial projection to dim
+        :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
+        :param proj_drop: dropout rate for output
+        :param prefix: name of this layer
+        """
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.lunchbox_dim = lunchbox_dim
+        self.qkv_bias = qkv_bias
+
+        self.scale = qk_scale or max(dim, lunchbox_dim) ** -0.5
+        self.prefix = prefix
+
+        self.qkv = None
+
+        self.proj = None
+        self.proj_drop = Dropout(proj_drop)
+        self.v = None
+        self.built = False
+        self.packed = not unpacked
+
+    def build(self, input_shape):
+        self.v = self.add_weight(f'{self.prefix}/attn/lunchbox',
+                                 shape=(input_shape[1], self.num_heads, self.lunchbox_dim),
+                                 initializer=tf.initializers.LecunNormal(),
+                                 trainable=self.packed)
+
+        self.qkv = self.add_weight(f'{self.prefix}/attn/qkv',
+                                   shape=(input_shape[-1], self.dim * 2 * self.num_heads),
+                                   initializer=tf.initializers.LecunNormal(),
+                                   trainable=True)
+
+        self.proj = self.add_weight(f'{self.prefix}/attn/proj',
+                                    shape=(self.num_heads * self.lunchbox_dim, self.dim),
+                                    initializer=tf.initializers.LecunNormal(),
+                                    trainable=True)
+
+        self.built = True
+
+    def pack(self):
+        # make the table untrainable
+        self.v = tf.Variable(self.v, trainable=False)
+
+    def unpack(self):
+        # make the table trainable
+        self.v = tf.Variable(self.v, trainable=True)
+
+    def call(self, x):
+        B_, N, C = x.get_shape().as_list()
+
+        # x = tf.reshape(x, (B_, N, C))
+        # (b, n, ch), (ch, dim) -> (b, n, dim * 2 * h)
+        x = tf.einsum('bnc,cd->bnd', x, self.qkv)
+
+        x = tf.reshape(x, (-1, N, self.num_heads, 2, self.dim))
+        qv = tf.transpose(x, perm=[3, 0, 1, 2, 4])
+
+        q, k = qv[0], qv[1]
+        k = tf.einsum('bnik->knbi', k)
+        q = tf.einsum('bnik->bink', q)
+        # batch, n, num_heads, dim x dim, lunchbox_dim -> batch, n, num_heads, lunchbox_dim
+        attn = tf.einsum('bink,kmbi->binm', q, k)
+        attn = attn * self.scale
+        tf.nn.softmax(attn, -1)
+
+        res = tf.einsum('birn,nik->birk', attn, self.v)
+
+        res = tf.einsum('birk->brik', res)
+
+        x = tf.reshape(res, (-1, N, self.num_heads * self.lunchbox_dim))
+
+        # (b, n, dim * n_h), (ch, dim) -> (b, n, dim)
+        x = tf.einsum('bnc,cd->bnd', x, self.proj)
+
+        x = self.proj_drop(x)
+
+        return x
+
+    def get_config(self):
+        return {"v": self.v.numpy()}
+
+
+class DarkLunchboxMHSA(tf.keras.layers.Layer):
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 lunchbox_dim,
+                 unpacked=False,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 proj_drop=0.,
+                 prefix=''):
+        """
+        Dot product self-attention where the K table is a matrix of learnable
+        parameters.  We use the 'Lunchbox' metaphor within this layer where the
+        lunchbox is K, and the savory lunchtime treats are the columns of K.
+        Packing is intended to refer to a stage of transfer learning wherein the
+        weights that form K are learned from an external task.  The lunchbox
+        is considered 'packed' after learning on the external task, and 'unpacked'
+        during training on the external task.  Call .pack() to freeze K, call
+        .unpack() to unfreeze them.
+
+        :param dim: embedding dimension for k, q, v
+        :param num_heads: number of attention heads
+        :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
+        :param qkv_bias: whether or not to use bias in the initial projection to dim
+        :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
+        :param proj_drop: dropout rate for output
+        :param prefix: name of this layer
+        """
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.lunchbox_dim = lunchbox_dim
+        self.qkv_bias = qkv_bias
+
+        self.scale = qk_scale or max(dim, lunchbox_dim) ** -0.5
+        self.prefix = prefix
+
+        self.qkv = None
+
+        self.proj = None
+        self.proj_drop = Dropout(proj_drop)
+        self.resp_norm = GlobalResponseNormalization()
+        self.k = None
+        self.built = False
+        self.packed = not unpacked
+
+    def build(self, input_shape):
+        self.k = self.add_weight(f'{self.prefix}/attn/lunchbox',
+                                 shape=(self.dim, self.lunchbox_dim),
+                                 initializer=tf.initializers.GlorotUniform(),
+                                 trainable=self.packed)
+
+        self.proj = self.add_weight(f'{self.prefix}/attn/proj',
+                                    shape=(self.num_heads * self.dim, self.dim),
+                                    initializer=tf.initializers.GlorotUniform(),
+                                    trainable=True)
+
+        self.qkv = self.add_weight(f'{self.prefix}/attn/qkv',
+                                   shape=(input_shape[-1], self.dim * 2 * self.num_heads),
+                                   initializer=tf.initializers.GlorotUniform(),
+                                   trainable=True)
+
+        self.built = True
+
+    def pack(self):
+        # make the table untrainable
+        self.k = tf.Variable(self.k, trainable=False)
+
+    def unpack(self):
+        # make the table trainable
+        self.k = tf.Variable(self.k, trainable=True)
+
+    def call(self, x):
+        B_, N, C = x.get_shape().as_list()
+
+        # x = tf.reshape(x, (B_, N, C))
+        # (b, n, ch), (ch, dim) -> (b, n, dim * 2 * h)
+        x = tf.einsum('bnc,cd->bnd', x, self.qkv)
+
+        x = tf.reshape(x, (-1, N, self.num_heads, 2, self.dim))
+        qv = tf.transpose(x, perm=[3, 0, 1, 2, 4])
+
+        q, v = qv[0], qv[1]
+        # batch, n, num_heads, dim x dim, lunchbox_dim -> batch, n, num_heads, lunchbox_dim
+        attn = tf.einsum('bnik,kr->bnir', q, self.k)
+        attn = hardswish(attn)
+        attn = self.resp_norm(attn)
+
+        attn = tf.einsum('bnir->birn', attn)
+        v = tf.einsum('bnik->bikn', v)
+
+        res = tf.einsum('birn,bikn->birk', attn, v)
+
+        res = tf.einsum('birk->brik', res)
+
+        x = tf.reshape(res, (-1, self.lunchbox_dim, self.num_heads * self.dim))
+
+        # (b, n, dim * n_h), (ch, dim) -> (b, n, dim)
+        x = tf.einsum('bnc,cd->bnd', x, self.proj)
+
+        x = self.proj_drop(x)
+
+        return x
+
+    def get_config(self):
+        return {"k": self.k.numpy()}
+
+
+class DarkLunchboxMHSA(tf.keras.layers.Layer):
+    def __init__(self,
+                 dim,
+                 num_heads,
+                 lunchbox_dim,
+                 unpacked=False,
+                 qkv_bias=True,
+                 qk_scale=None,
+                 proj_drop=0.,
+                 prefix=''):
+        """
+        Dot product self-attention where the K table is a matrix of learnable
+        parameters.  We use the 'Lunchbox' metaphor within this layer where the
+        lunchbox is K, and the savory lunchtime treats are the columns of K.
+        Packing is intended to refer to a stage of transfer learning wherein the
+        weights that form K are learned from an external task.  The lunchbox
+        is considered 'packed' after learning on the external task, and 'unpacked'
+        during training on the external task.  Call .pack() to freeze K, call
+        .unpack() to unfreeze them.
+
+        :param dim: embedding dimension for k, q, v
+        :param num_heads: number of attention heads
+        :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
+        :param qkv_bias: whether or not to use bias in the initial projection to dim
+        :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
+        :param proj_drop: dropout rate for output
+        :param prefix: name of this layer
+        """
+        super().__init__()
+        self.dim = dim
+        self.num_heads = num_heads
+        self.lunchbox_dim = lunchbox_dim
+        self.qkv_bias = qkv_bias
+
+        self.scale = qk_scale or max(dim, lunchbox_dim) ** -0.5
+        self.prefix = prefix
+
+        self.qkv = None
+
+        self.proj = None
+        self.proj_drop = Dropout(proj_drop)
+        self.resp_norm = GlobalResponseNormalization()
+        self.k = None
+        self.built = False
+        self.packed = not unpacked
+
+    def build(self, input_shape):
+        self.k = self.add_weight(f'{self.prefix}/attn/lunchbox',
+                                 shape=(self.dim, self.lunchbox_dim),
+                                 initializer=tf.initializers.GlorotUniform(),
+                                 trainable=self.packed)
+
+        self.proj = self.add_weight(f'{self.prefix}/attn/proj',
+                                    shape=(self.num_heads * self.dim, self.dim),
+                                    initializer=tf.initializers.GlorotUniform(),
+                                    trainable=True)
+
+        self.qkv = self.add_weight(f'{self.prefix}/attn/qkv',
+                                   shape=(input_shape[-1], self.dim * 2 * self.num_heads),
+                                   initializer=tf.initializers.GlorotUniform(),
+                                   trainable=True)
+
+        self.built = True
+
+    def pack(self):
+        # make the table untrainable
+        self.k = tf.Variable(self.k, trainable=False)
+
+    def unpack(self):
+        # make the table trainable
+        self.k = tf.Variable(self.k, trainable=True)
+
+    def call(self, x):
+        B_, N, C = x.get_shape().as_list()
+
+        # x = tf.reshape(x, (B_, N, C))
+        # (b, n, ch), (ch, dim) -> (b, n, dim * 2 * h)
+        x = tf.einsum('bnc,cd->bnd', x, self.qkv)
+
+        x = tf.reshape(x, (-1, N, self.num_heads, 2, self.dim))
+        qv = tf.transpose(x, perm=[3, 0, 1, 2, 4])
+
+        q, v = qv[0], qv[1]
+        # batch, n, num_heads, dim x dim, lunchbox_dim -> batch, n, num_heads, lunchbox_dim
+        attn = tf.einsum('bnik,kr->bnir', q, self.k)
+        attn = hardswish(attn)
+        attn = self.resp_norm(attn)
+
+        attn = tf.einsum('bnir->birn', attn)
+        v = tf.einsum('bnik->bikn', v)
+
+        res = tf.einsum('birn,bikn->birk', attn, v)
+
+        res = tf.einsum('birk->brik', res)
+
+        x = tf.reshape(res, (-1, self.lunchbox_dim, self.num_heads * self.dim))
+
+        # (b, n, dim * n_h), (ch, dim) -> (b, n, dim)
+        x = tf.einsum('bnc,cd->bnd', x, self.proj)
+
         x = self.proj_drop(x)
 
         return x
