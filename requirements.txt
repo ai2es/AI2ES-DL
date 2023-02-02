@@ -12,3 +12,4 @@ skimage==0.0
 tensorflow==2.6.0
 tensorflow_datasets==4.8.2
 tfds_nightly==4.6.0.dev202210050045
+python-docs-theme=2022.1=pypi_0
