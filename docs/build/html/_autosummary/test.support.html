@@ -1,0 +1,969 @@
+<!doctype html>
+<html class="no-js">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="test.support.anticipate_failure" href="test.support.anticipate_failure.html" /><link rel="prev" title="test" href="test.html" />
+
+    <!-- Generated with Sphinx 4.4.0 and Furo 2022.12.07 -->
+        <title>test.support - AI2ES Deep Learning 2/2/23 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">AI2ES Deep Learning 2/2/23 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">AI2ES Deep Learning 2/2/23 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="optimization.html">optimization</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="optimization.callbacks.html">optimization.callbacks</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimization.callbacks.EarlyStoppingDifference.html">optimization.callbacks.EarlyStoppingDifference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.callbacks.LossWeightScheduler.html">optimization.callbacks.LossWeightScheduler</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="optimization.schedules.html">optimization.schedules</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.bleed_out.html">optimization.schedules.bleed_out</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.cyclical_adv_lrscheduler25.html">optimization.schedules.cyclical_adv_lrscheduler25</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.diffusion_schedule.html">optimization.schedules.diffusion_schedule</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="support.html">support</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="support.data_structures.html">support.data_structures</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="support.data_structures.ModelData.html">support.data_structures.ModelData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.data_structures.ModelEvaluator.html">support.data_structures.ModelEvaluator</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="support.util.html">support.util</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="support.util.augment_args.html">support.util.augment_args</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.dict_to_string.html">support.util.dict_to_string</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.generate_fname.html">support.util.generate_fname</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.load_most_recent_results.html">support.util.load_most_recent_results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.load_most_recent_results_with_fnames.html">support.util.load_most_recent_results_with_fnames</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.prep_gpu.html">support.util.prep_gpu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Config.html">support.util.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Experiment.html">support.util.Experiment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.JobIterator.html">support.util.JobIterator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Results.html">support.util.Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="trainable.html">trainable</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.activations.html">trainable.activations</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.hardswish.html">trainable.activations.hardswish</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.int_act_no_slip.html">trainable.activations.int_act_no_slip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.int_act_slip.html">trainable.activations.int_act_slip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.mish.html">trainable.activations.mish</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.custom_layers.html">trainable.custom_layers</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.ConvNeXtV2_block.html">trainable.custom_layers.ConvNeXtV2_block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.ConvNeXt_block.html">trainable.custom_layers.ConvNeXt_block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.GRN.html">trainable.custom_layers.GRN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.custom_focal_module.html">trainable.custom_layers.custom_focal_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.focal_module.html">trainable.custom_layers.focal_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.get_emb.html">trainable.custom_layers.get_emb</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.DarkLunchboxMHSA.html">trainable.custom_layers.DarkLunchboxMHSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.GlobalResponseNormalization.html">trainable.custom_layers.GlobalResponseNormalization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.PCA.html">trainable.custom_layers.PCA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.PCACompress.html">trainable.custom_layers.PCACompress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.QLunchboxMHSA.html">trainable.custom_layers.QLunchboxMHSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.TFPositionalEncoding2D.html">trainable.custom_layers.TFPositionalEncoding2D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.VLunchboxMHSA.html">trainable.custom_layers.VLunchboxMHSA</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.losses.html">trainable.losses</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.CE.html">trainable.losses.CE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.NCE.html">trainable.losses.NCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.identity.html">trainable.losses.identity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.logsum.html">trainable.losses.logsum</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="test.html">test</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">test.support</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="test.support.anticipate_failure.html">test.support.anticipate_failure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.args_from_interpreter_flags.html">test.support.args_from_interpreter_flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.bigaddrspacetest.html">test.support.bigaddrspacetest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.bigmemtest.html">test.support.bigmemtest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.calcobjsize.html">test.support.calcobjsize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.calcvobjsize.html">test.support.calcvobjsize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.can_symlink.html">test.support.can_symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.can_xattr.html">test.support.can_xattr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_output.html">test.support.captured_output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stderr.html">test.support.captured_stderr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stdin.html">test.support.captured_stdin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stdout.html">test.support.captured_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.change_cwd.html">test.support.change_cwd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check__all__.html">test.support.check__all__</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_free_after_iterating.html">test.support.check_free_after_iterating</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_impl_detail.html">test.support.check_impl_detail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_no_resource_warning.html">test.support.check_no_resource_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_no_warnings.html">test.support.check_no_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_sanitizer.html">test.support.check_sanitizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_sizeof.html">test.support.check_sizeof</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_syntax_error.html">test.support.check_syntax_error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_syntax_warning.html">test.support.check_syntax_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_warnings.html">test.support.check_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.clear_ignored_deprecations.html">test.support.clear_ignored_deprecations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.collision_stats.html">test.support.collision_stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.cpython_only.html">test.support.cpython_only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.create_empty_file.html">test.support.create_empty_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.darwin_malloc_err_warning.html">test.support.darwin_malloc_err_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.detect_api_mismatch.html">test.support.detect_api_mismatch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.disable_faulthandler.html">test.support.disable_faulthandler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.disable_gc.html">test.support.disable_gc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.fd_count.html">test.support.fd_count</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.findfile.html">test.support.findfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.forget.html">test.support.forget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.fs_is_case_insensitive.html">test.support.fs_is_case_insensitive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.gc_collect.html">test.support.gc_collect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.get_attribute.html">test.support.get_attribute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.get_original_stdout.html">test.support.get_original_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ignore_deprecations_from.html">test.support.ignore_deprecations_from</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ignore_warnings.html">test.support.ignore_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.impl_detail.html">test.support.impl_detail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.import_fresh_module.html">test.support.import_fresh_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.import_module.html">test.support.import_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.infinite_recursion.html">test.support.infinite_recursion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.is_resource_enabled.html">test.support.is_resource_enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.join_thread.html">test.support.join_thread</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.load_package_tests.html">test.support.load_package_tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.make_bad_fd.html">test.support.make_bad_fd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.make_legacy_pyc.html">test.support.make_legacy_pyc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.match_test.html">test.support.match_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.maybe_get_event_loop_policy.html">test.support.maybe_get_event_loop_policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.missing_compiler_executable.html">test.support.missing_compiler_executable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.modules_cleanup.html">test.support.modules_cleanup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.modules_setup.html">test.support.modules_setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.no_tracing.html">test.support.no_tracing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.open_dir_fd.html">test.support.open_dir_fd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.open_urlresource.html">test.support.open_urlresource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.optim_args_from_interpreter_flags.html">test.support.optim_args_from_interpreter_flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.patch.html">test.support.patch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.print_warning.html">test.support.print_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.python_is_optimized.html">test.support.python_is_optimized</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.reap_children.html">test.support.reap_children</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.reap_threads.html">test.support.reap_threads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.record_original_stdout.html">test.support.record_original_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.refcount_test.html">test.support.refcount_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires.html">test.support.requires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_bz2.html">test.support.requires_bz2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_freebsd_version.html">test.support.requires_freebsd_version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_gzip.html">test.support.requires_gzip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_linux_version.html">test.support.requires_linux_version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_lzma.html">test.support.requires_lzma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_mac_ver.html">test.support.requires_mac_ver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_resource.html">test.support.requires_resource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_zlib.html">test.support.requires_zlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.rmdir.html">test.support.rmdir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.rmtree.html">test.support.rmtree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_doctest.html">test.support.run_doctest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_in_subinterp.html">test.support.run_in_subinterp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_unittest.html">test.support.run_unittest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_with_locale.html">test.support.run_with_locale</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_with_tz.html">test.support.run_with_tz</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.save_restore_warnings_filters.html">test.support.save_restore_warnings_filters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.set_match_tests.html">test.support.set_match_tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.set_memlimit.html">test.support.set_memlimit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.setswitchinterval.html">test.support.setswitchinterval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_broken_multiprocessing_synchronize.html">test.support.skip_if_broken_multiprocessing_synchronize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_buggy_ucrt_strfptime.html">test.support.skip_if_buggy_ucrt_strfptime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_new_parser.html">test.support.skip_if_new_parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_pgo_task.html">test.support.skip_if_pgo_task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_sanitizer.html">test.support.skip_if_sanitizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_unless_symlink.html">test.support.skip_unless_symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_unless_xattr.html">test.support.skip_unless_xattr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.sortdict.html">test.support.sortdict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.start_threads.html">test.support.start_threads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.suppress_msvcrt_asserts.html">test.support.suppress_msvcrt_asserts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.swap_attr.html">test.support.swap_attr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.swap_item.html">test.support.swap_item</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.system_must_validate_cert.html">test.support.system_must_validate_cert</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_cwd.html">test.support.temp_cwd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_dir.html">test.support.temp_dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_umask.html">test.support.temp_umask</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.threading_cleanup.html">test.support.threading_cleanup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.threading_setup.html">test.support.threading_setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.unlink.html">test.support.unlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.unload.html">test.support.unload</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.use_old_parser.html">test.support.use_old_parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.wait_process.html">test.support.wait_process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.wait_threads_exit.html">test.support.wait_threads_exit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.with_pymalloc.html">test.support.with_pymalloc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.BasicTestRunner.html">test.support.BasicTestRunner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.CleanImport.html">test.support.CleanImport</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.DirsOnSysPath.html">test.support.DirsOnSysPath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.EnvironmentVarGuard.html">test.support.EnvironmentVarGuard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.FakePath.html">test.support.FakePath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.Matcher.html">test.support.Matcher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.PythonSymlink.html">test.support.PythonSymlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.SaveSignals.html">test.support.SaveSignals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.SuppressCrashReport.html">test.support.SuppressCrashReport</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TransientResource.html">test.support.TransientResource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.WarningsRecorder.html">test.support.WarningsRecorder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.catch_threading_exception.html">test.support.catch_threading_exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.catch_unraisable_exception.html">test.support.catch_unraisable_exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.Error.html">test.support.Error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ResourceDenied.html">test.support.ResourceDenied</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestDidNotRun.html">test.support.TestDidNotRun</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestFailed.html">test.support.TestFailed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestFailedWithDetails.html">test.support.TestFailedWithDetails</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.bytecode_helper.html">test.support.bytecode_helper</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.bytecode_helper.BytecodeTestCase.html">test.support.bytecode_helper.BytecodeTestCase</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.hashlib_helper.html">test.support.hashlib_helper</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.hashlib_helper.requires_hashdigest.html">test.support.hashlib_helper.requires_hashdigest</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.logging_helper.html">test.support.logging_helper</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.logging_helper.TestHandler.html">test.support.logging_helper.TestHandler</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.script_helper.html">test.support.script_helper</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.assert_python_failure.html">test.support.script_helper.assert_python_failure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.assert_python_ok.html">test.support.script_helper.assert_python_ok</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.interpreter_requires_environment.html">test.support.script_helper.interpreter_requires_environment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.kill_python.html">test.support.script_helper.kill_python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_pkg.html">test.support.script_helper.make_pkg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_script.html">test.support.script_helper.make_script</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_zip_pkg.html">test.support.script_helper.make_zip_pkg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_zip_script.html">test.support.script_helper.make_zip_script</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.run_python_until_end.html">test.support.script_helper.run_python_until_end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.spawn_python.html">test.support.script_helper.spawn_python</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.socket_helper.html">test.support.socket_helper</a><input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.bind_port.html">test.support.socket_helper.bind_port</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.bind_unix_socket.html">test.support.socket_helper.bind_unix_socket</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.find_unused_port.html">test.support.socket_helper.find_unused_port</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.get_socket_conn_refused_errs.html">test.support.socket_helper.get_socket_conn_refused_errs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.skip_unless_bind_unix_socket.html">test.support.socket_helper.skip_unless_bind_unix_socket</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.transient_internet.html">test.support.socket_helper.transient_internet</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.testresult.html">test.support.testresult</a><input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.get_test_runner.html">test.support.testresult.get_test_runner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.get_test_runner_class.html">test.support.testresult.get_test_runner_class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.QuietRegressionTestRunner.html">test.support.testresult.QuietRegressionTestRunner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.RegressionTestResult.html">test.support.testresult.RegressionTestResult</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.warnings_helper.html">test.support.warnings_helper</a><input class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_no_resource_warning.html">test.support.warnings_helper.check_no_resource_warning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_no_warnings.html">test.support.warnings_helper.check_no_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_syntax_warning.html">test.support.warnings_helper.check_syntax_warning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_warnings.html">test.support.warnings_helper.check_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.ignore_warnings.html">test.support.warnings_helper.ignore_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.save_restore_warnings_filters.html">test.support.warnings_helper.save_restore_warnings_filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.WarningsRecorder.html">test.support.warnings_helper.WarningsRecorder</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="module-test.support">
+<span id="test-support"></span><h1>test.support<a class="headerlink" href="#module-test.support" title="Permalink to this headline">#</a></h1>
+<p>Supporting definitions for the Python regression tests.</p>
+<p class="rubric">Functions</p>
+<div class="table-wrapper longtable docutils container">
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.anticipate_failure.html#test.support.anticipate_failure" title="test.support.anticipate_failure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">anticipate_failure</span></code></a>(condition)</p></td>
+<td><p>Decorator to mark a test that is known to be broken in some cases</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.args_from_interpreter_flags.html#test.support.args_from_interpreter_flags" title="test.support.args_from_interpreter_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">args_from_interpreter_flags</span></code></a>()</p></td>
+<td><p>Return a list of command-line arguments reproducing the current settings in sys.flags and sys.warnoptions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.bigaddrspacetest.html#test.support.bigaddrspacetest" title="test.support.bigaddrspacetest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bigaddrspacetest</span></code></a>(f)</p></td>
+<td><p>Decorator for tests that fill the address space.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.bigmemtest.html#test.support.bigmemtest" title="test.support.bigmemtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bigmemtest</span></code></a>(size, memuse[, dry_run])</p></td>
+<td><p>Decorator for bigmem tests.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.calcobjsize.html#test.support.calcobjsize" title="test.support.calcobjsize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calcobjsize</span></code></a>(fmt)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.calcvobjsize.html#test.support.calcvobjsize" title="test.support.calcvobjsize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calcvobjsize</span></code></a>(fmt)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.can_symlink.html#test.support.can_symlink" title="test.support.can_symlink"><code class="xref py py-obj docutils literal notranslate"><span class="pre">can_symlink</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.can_xattr.html#test.support.can_xattr" title="test.support.can_xattr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">can_xattr</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.captured_output.html#test.support.captured_output" title="test.support.captured_output"><code class="xref py py-obj docutils literal notranslate"><span class="pre">captured_output</span></code></a>(stream_name)</p></td>
+<td><p>Return a context manager used by captured_stdout/stdin/stderr that temporarily replaces the sys stream <em>stream_name</em> with a StringIO.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.captured_stderr.html#test.support.captured_stderr" title="test.support.captured_stderr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">captured_stderr</span></code></a>()</p></td>
+<td><p>Capture the output of sys.stderr:</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.captured_stdin.html#test.support.captured_stdin" title="test.support.captured_stdin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">captured_stdin</span></code></a>()</p></td>
+<td><p>Capture the input to sys.stdin:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.captured_stdout.html#test.support.captured_stdout" title="test.support.captured_stdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">captured_stdout</span></code></a>()</p></td>
+<td><p>Capture the output of sys.stdout:</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.change_cwd.html#test.support.change_cwd" title="test.support.change_cwd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_cwd</span></code></a>(path[, quiet])</p></td>
+<td><p>Return a context manager that changes the current working directory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.check__all__.html#test.support.check__all__" title="test.support.check__all__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check__all__</span></code></a>(test_case, module[, ...])</p></td>
+<td><p>Assert that the __all__ variable of 'module' contains all public names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.check_free_after_iterating.html#test.support.check_free_after_iterating" title="test.support.check_free_after_iterating"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_free_after_iterating</span></code></a>(test, iter, cls)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.check_impl_detail.html#test.support.check_impl_detail" title="test.support.check_impl_detail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_impl_detail</span></code></a>(**guards)</p></td>
+<td><p>This function returns True or False depending on the host platform. Examples:    if check_impl_detail():               # only on CPython (default)    if check_impl_detail(jython=True):    # only on Jython    if check_impl_detail(cpython=False):  # everywhere except on CPython.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.check_no_resource_warning.html#test.support.check_no_resource_warning" title="test.support.check_no_resource_warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_no_resource_warning</span></code></a>(testcase)</p></td>
+<td><p>Context manager to check that no ResourceWarning is emitted.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.check_no_warnings.html#test.support.check_no_warnings" title="test.support.check_no_warnings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_no_warnings</span></code></a>(testcase[, message, ...])</p></td>
+<td><p>Context manager to check that no warnings are emitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.check_sanitizer.html#test.support.check_sanitizer" title="test.support.check_sanitizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_sanitizer</span></code></a>(*[, address, memory, ub])</p></td>
+<td><p>Returns True if Python is compiled with sanitizer support</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.check_sizeof.html#test.support.check_sizeof" title="test.support.check_sizeof"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_sizeof</span></code></a>(test, o, size)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.check_syntax_error.html#test.support.check_syntax_error" title="test.support.check_syntax_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_syntax_error</span></code></a>(testcase, statement[, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.check_syntax_warning.html#test.support.check_syntax_warning" title="test.support.check_syntax_warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_syntax_warning</span></code></a>(testcase, statement[, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.check_warnings.html#test.support.check_warnings" title="test.support.check_warnings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_warnings</span></code></a>(*filters, **kwargs)</p></td>
+<td><p>Context manager to silence warnings.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.clear_ignored_deprecations.html#test.support.clear_ignored_deprecations" title="test.support.clear_ignored_deprecations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_ignored_deprecations</span></code></a>(*tokens)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.collision_stats.html#test.support.collision_stats" title="test.support.collision_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">collision_stats</span></code></a>(nbins, nballs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.cpython_only.html#test.support.cpython_only" title="test.support.cpython_only"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpython_only</span></code></a>(test)</p></td>
+<td><p>Decorator for tests only applicable on CPython.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.create_empty_file.html#test.support.create_empty_file" title="test.support.create_empty_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_empty_file</span></code></a>(filename)</p></td>
+<td><p>Create an empty file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.darwin_malloc_err_warning.html#test.support.darwin_malloc_err_warning" title="test.support.darwin_malloc_err_warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">darwin_malloc_err_warning</span></code></a>(test_name)</p></td>
+<td><p>Assure user that loud errors generated by macOS libc's malloc are expected.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.detect_api_mismatch.html#test.support.detect_api_mismatch" title="test.support.detect_api_mismatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect_api_mismatch</span></code></a>(ref_api, other_api, *[, ...])</p></td>
+<td><p>Returns the set of items in ref_api not in other_api, except for a defined list of items to be ignored in this check.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.disable_faulthandler.html#test.support.disable_faulthandler" title="test.support.disable_faulthandler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disable_faulthandler</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.disable_gc.html#test.support.disable_gc" title="test.support.disable_gc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disable_gc</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.fd_count.html#test.support.fd_count" title="test.support.fd_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fd_count</span></code></a>()</p></td>
+<td><p>Count the number of open file descriptors.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.findfile.html#test.support.findfile" title="test.support.findfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">findfile</span></code></a>(filename[, subdir])</p></td>
+<td><p>Try to find a file on sys.path or in the test directory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.forget.html#test.support.forget" title="test.support.forget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">forget</span></code></a>(modname)</p></td>
+<td><p>'Forget' a module was ever imported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.fs_is_case_insensitive.html#test.support.fs_is_case_insensitive" title="test.support.fs_is_case_insensitive"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fs_is_case_insensitive</span></code></a>(directory)</p></td>
+<td><p>Detects if the file system for the specified directory is case-insensitive.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.gc_collect.html#test.support.gc_collect" title="test.support.gc_collect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gc_collect</span></code></a>()</p></td>
+<td><p>Force as many objects as possible to be collected.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.get_attribute.html#test.support.get_attribute" title="test.support.get_attribute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_attribute</span></code></a>(obj, name)</p></td>
+<td><p>Get an attribute, raising SkipTest if AttributeError is raised.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.get_original_stdout.html#test.support.get_original_stdout" title="test.support.get_original_stdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_original_stdout</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.ignore_deprecations_from.html#test.support.ignore_deprecations_from" title="test.support.ignore_deprecations_from"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ignore_deprecations_from</span></code></a>(module, *, like)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.ignore_warnings.html#test.support.ignore_warnings" title="test.support.ignore_warnings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ignore_warnings</span></code></a>(*, category)</p></td>
+<td><p>Decorator to suppress deprecation warnings.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.impl_detail.html#test.support.impl_detail" title="test.support.impl_detail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">impl_detail</span></code></a>([msg])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.import_fresh_module.html#test.support.import_fresh_module" title="test.support.import_fresh_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_fresh_module</span></code></a>(name[, fresh, blocked, ...])</p></td>
+<td><p>Import and return a module, deliberately bypassing sys.modules.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.import_module.html#test.support.import_module" title="test.support.import_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">import_module</span></code></a>(name[, deprecated, required_on])</p></td>
+<td><p>Import and return the module to be tested, raising SkipTest if it is not available.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.infinite_recursion.html#test.support.infinite_recursion" title="test.support.infinite_recursion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">infinite_recursion</span></code></a>([max_depth])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.is_resource_enabled.html#test.support.is_resource_enabled" title="test.support.is_resource_enabled"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_resource_enabled</span></code></a>(resource)</p></td>
+<td><p>Test whether a resource is enabled.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.join_thread.html#test.support.join_thread" title="test.support.join_thread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_thread</span></code></a>(thread[, timeout])</p></td>
+<td><p>Join a thread.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.load_package_tests.html#test.support.load_package_tests" title="test.support.load_package_tests"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_package_tests</span></code></a>(pkg_dir, loader, ...)</p></td>
+<td><p>Generic load_tests implementation for simple test packages.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.make_bad_fd.html#test.support.make_bad_fd" title="test.support.make_bad_fd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_bad_fd</span></code></a>()</p></td>
+<td><p>Create an invalid file descriptor by opening and closing a file and return its fd.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.make_legacy_pyc.html#test.support.make_legacy_pyc" title="test.support.make_legacy_pyc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_legacy_pyc</span></code></a>(source)</p></td>
+<td><p>Move a PEP 3147/488 pyc file to its legacy pyc location.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.match_test.html#test.support.match_test" title="test.support.match_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">match_test</span></code></a>(test)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.maybe_get_event_loop_policy.html#test.support.maybe_get_event_loop_policy" title="test.support.maybe_get_event_loop_policy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">maybe_get_event_loop_policy</span></code></a>()</p></td>
+<td><p>Return the global event loop policy if one is set, else return None.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.missing_compiler_executable.html#test.support.missing_compiler_executable" title="test.support.missing_compiler_executable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">missing_compiler_executable</span></code></a>([cmd_names])</p></td>
+<td><p>Check if the compiler components used to build the interpreter exist.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.modules_cleanup.html#test.support.modules_cleanup" title="test.support.modules_cleanup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules_cleanup</span></code></a>(oldmodules)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.modules_setup.html#test.support.modules_setup" title="test.support.modules_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules_setup</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.no_tracing.html#test.support.no_tracing" title="test.support.no_tracing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_tracing</span></code></a>(func)</p></td>
+<td><p>Decorator to temporarily turn off tracing for the duration of a test.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.open_dir_fd.html#test.support.open_dir_fd" title="test.support.open_dir_fd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_dir_fd</span></code></a>(path)</p></td>
+<td><p>Open a file descriptor to a directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.open_urlresource.html#test.support.open_urlresource" title="test.support.open_urlresource"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_urlresource</span></code></a>(url, *args, **kw)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.optim_args_from_interpreter_flags.html#test.support.optim_args_from_interpreter_flags" title="test.support.optim_args_from_interpreter_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optim_args_from_interpreter_flags</span></code></a>()</p></td>
+<td><p>Return a list of command-line arguments reproducing the current optimization settings in sys.flags.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.patch.html#test.support.patch" title="test.support.patch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">patch</span></code></a>(test_instance, object_to_patch, ...)</p></td>
+<td><p>Override 'object_to_patch'.'attr_name' with 'new_value'.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.print_warning.html#test.support.print_warning" title="test.support.print_warning"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_warning</span></code></a>(msg)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.python_is_optimized.html#test.support.python_is_optimized" title="test.support.python_is_optimized"><code class="xref py py-obj docutils literal notranslate"><span class="pre">python_is_optimized</span></code></a>()</p></td>
+<td><p>Find if Python was built with optimizations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.reap_children.html#test.support.reap_children" title="test.support.reap_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reap_children</span></code></a>()</p></td>
+<td><p>Use this function at the end of test_main() whenever sub-processes are started.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.reap_threads.html#test.support.reap_threads" title="test.support.reap_threads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reap_threads</span></code></a>(func)</p></td>
+<td><p>Use this function when threads are being used.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.record_original_stdout.html#test.support.record_original_stdout" title="test.support.record_original_stdout"><code class="xref py py-obj docutils literal notranslate"><span class="pre">record_original_stdout</span></code></a>(stdout)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.refcount_test.html#test.support.refcount_test" title="test.support.refcount_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refcount_test</span></code></a>(test)</p></td>
+<td><p>Decorator for tests which involve reference counting.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.requires.html#test.support.requires" title="test.support.requires"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires</span></code></a>(resource[, msg])</p></td>
+<td><p>Raise ResourceDenied if the specified resource is not available.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.requires_bz2.html#test.support.requires_bz2" title="test.support.requires_bz2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_bz2</span></code></a>([reason])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.requires_freebsd_version.html#test.support.requires_freebsd_version" title="test.support.requires_freebsd_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_freebsd_version</span></code></a>(*min_version)</p></td>
+<td><p>Decorator raising SkipTest if the OS is FreeBSD and the FreeBSD version is less than <cite>min_version</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.requires_gzip.html#test.support.requires_gzip" title="test.support.requires_gzip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_gzip</span></code></a>([reason])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.requires_linux_version.html#test.support.requires_linux_version" title="test.support.requires_linux_version"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_linux_version</span></code></a>(*min_version)</p></td>
+<td><p>Decorator raising SkipTest if the OS is Linux and the Linux version is less than <cite>min_version</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.requires_lzma.html#test.support.requires_lzma" title="test.support.requires_lzma"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_lzma</span></code></a>([reason])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.requires_mac_ver.html#test.support.requires_mac_ver" title="test.support.requires_mac_ver"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_mac_ver</span></code></a>(*min_version)</p></td>
+<td><p>Decorator raising SkipTest if the OS is Mac OS X and the OS X version if less than min_version.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.requires_resource.html#test.support.requires_resource" title="test.support.requires_resource"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_resource</span></code></a>(resource)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.requires_zlib.html#test.support.requires_zlib" title="test.support.requires_zlib"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_zlib</span></code></a>([reason])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.rmdir.html#test.support.rmdir" title="test.support.rmdir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rmdir</span></code></a>(dirname)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.rmtree.html#test.support.rmtree" title="test.support.rmtree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rmtree</span></code></a>(path)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.run_doctest.html#test.support.run_doctest" title="test.support.run_doctest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_doctest</span></code></a>(module[, verbosity, optionflags])</p></td>
+<td><p>Run doctest on the given module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.run_in_subinterp.html#test.support.run_in_subinterp" title="test.support.run_in_subinterp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_in_subinterp</span></code></a>(code)</p></td>
+<td><p>Run code in a subinterpreter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.run_unittest.html#test.support.run_unittest" title="test.support.run_unittest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_unittest</span></code></a>(*classes)</p></td>
+<td><p>Run tests from unittest.TestCase-derived classes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.run_with_locale.html#test.support.run_with_locale" title="test.support.run_with_locale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_with_locale</span></code></a>(catstr, *locales)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.run_with_tz.html#test.support.run_with_tz" title="test.support.run_with_tz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_with_tz</span></code></a>(tz)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.save_restore_warnings_filters.html#test.support.save_restore_warnings_filters" title="test.support.save_restore_warnings_filters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_restore_warnings_filters</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.set_match_tests.html#test.support.set_match_tests" title="test.support.set_match_tests"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_match_tests</span></code></a>([accept_patterns, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.set_memlimit.html#test.support.set_memlimit" title="test.support.set_memlimit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_memlimit</span></code></a>(limit)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.setswitchinterval.html#test.support.setswitchinterval" title="test.support.setswitchinterval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setswitchinterval</span></code></a>(interval)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.skip_if_broken_multiprocessing_synchronize.html#test.support.skip_if_broken_multiprocessing_synchronize" title="test.support.skip_if_broken_multiprocessing_synchronize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_if_broken_multiprocessing_synchronize</span></code></a>()</p></td>
+<td><p>Skip tests if the multiprocessing.synchronize module is missing, if there is no available semaphore implementation, or if creating a lock raises an OSError (on Linux only).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.skip_if_buggy_ucrt_strfptime.html#test.support.skip_if_buggy_ucrt_strfptime" title="test.support.skip_if_buggy_ucrt_strfptime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_if_buggy_ucrt_strfptime</span></code></a>(test)</p></td>
+<td><p>Skip decorator for tests that use buggy strptime/strftime</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.skip_if_new_parser.html#test.support.skip_if_new_parser" title="test.support.skip_if_new_parser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_if_new_parser</span></code></a>(msg)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.skip_if_pgo_task.html#test.support.skip_if_pgo_task" title="test.support.skip_if_pgo_task"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_if_pgo_task</span></code></a>(test)</p></td>
+<td><p>Skip decorator for tests not run in (non-extended) PGO task</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.skip_if_sanitizer.html#test.support.skip_if_sanitizer" title="test.support.skip_if_sanitizer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_if_sanitizer</span></code></a>([reason, address, memory, ub])</p></td>
+<td><p>Decorator raising SkipTest if running with a sanitizer active.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.skip_unless_symlink.html#test.support.skip_unless_symlink" title="test.support.skip_unless_symlink"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_unless_symlink</span></code></a>(test)</p></td>
+<td><p>Skip decorator for tests that require functional symlink</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.skip_unless_xattr.html#test.support.skip_unless_xattr" title="test.support.skip_unless_xattr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skip_unless_xattr</span></code></a>(test)</p></td>
+<td><p>Skip decorator for tests that require functional extended attributes</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.sortdict.html#test.support.sortdict" title="test.support.sortdict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sortdict</span></code></a>(dict)</p></td>
+<td><p>Like repr(dict), but in sorted order.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.start_threads.html#test.support.start_threads" title="test.support.start_threads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_threads</span></code></a>(threads[, unlock])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.suppress_msvcrt_asserts.html#test.support.suppress_msvcrt_asserts" title="test.support.suppress_msvcrt_asserts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">suppress_msvcrt_asserts</span></code></a>([verbose])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.swap_attr.html#test.support.swap_attr" title="test.support.swap_attr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swap_attr</span></code></a>(obj, attr, new_val)</p></td>
+<td><p>Temporary swap out an attribute with a new object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.swap_item.html#test.support.swap_item" title="test.support.swap_item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swap_item</span></code></a>(obj, item, new_val)</p></td>
+<td><p>Temporary swap out an item with a new object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.system_must_validate_cert.html#test.support.system_must_validate_cert" title="test.support.system_must_validate_cert"><code class="xref py py-obj docutils literal notranslate"><span class="pre">system_must_validate_cert</span></code></a>(f)</p></td>
+<td><p>Skip the test on TLS certificate validation failures.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.temp_cwd.html#test.support.temp_cwd" title="test.support.temp_cwd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temp_cwd</span></code></a>([name, quiet])</p></td>
+<td><p>Context manager that temporarily creates and changes the CWD.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.temp_dir.html#test.support.temp_dir" title="test.support.temp_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temp_dir</span></code></a>([path, quiet])</p></td>
+<td><p>Return a context manager that creates a temporary directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.temp_umask.html#test.support.temp_umask" title="test.support.temp_umask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">temp_umask</span></code></a>(umask)</p></td>
+<td><p>Context manager that temporarily sets the process umask.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.threading_cleanup.html#test.support.threading_cleanup" title="test.support.threading_cleanup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threading_cleanup</span></code></a>(*original_values)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.threading_setup.html#test.support.threading_setup" title="test.support.threading_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threading_setup</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.unlink.html#test.support.unlink" title="test.support.unlink"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unlink</span></code></a>(filename)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.unload.html#test.support.unload" title="test.support.unload"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unload</span></code></a>(name)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.use_old_parser.html#test.support.use_old_parser" title="test.support.use_old_parser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_old_parser</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.wait_process.html#test.support.wait_process" title="test.support.wait_process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait_process</span></code></a>(pid, *, exitcode[, timeout])</p></td>
+<td><p>Wait until process pid completes and check that the process exit code is exitcode.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.wait_threads_exit.html#test.support.wait_threads_exit" title="test.support.wait_threads_exit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait_threads_exit</span></code></a>([timeout])</p></td>
+<td><p>bpo-31234: Context manager to wait until all threads created in the with statement exit.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.with_pymalloc.html#test.support.with_pymalloc" title="test.support.with_pymalloc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_pymalloc</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="table-wrapper longtable docutils container">
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.BasicTestRunner.html#test.support.BasicTestRunner" title="test.support.BasicTestRunner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BasicTestRunner</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.CleanImport.html#test.support.CleanImport" title="test.support.CleanImport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CleanImport</span></code></a>(*module_names)</p></td>
+<td><p>Context manager to force import to return a new module reference.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.DirsOnSysPath.html#test.support.DirsOnSysPath" title="test.support.DirsOnSysPath"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DirsOnSysPath</span></code></a>(*paths)</p></td>
+<td><p>Context manager to temporarily add directories to sys.path.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.EnvironmentVarGuard.html#test.support.EnvironmentVarGuard" title="test.support.EnvironmentVarGuard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EnvironmentVarGuard</span></code></a>()</p></td>
+<td><p>Class to help protect the environment variable properly.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.FakePath.html#test.support.FakePath" title="test.support.FakePath"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FakePath</span></code></a>(path)</p></td>
+<td><p>Simple implementing of the path protocol.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.Matcher.html#test.support.Matcher" title="test.support.Matcher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Matcher</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.PythonSymlink.html#test.support.PythonSymlink" title="test.support.PythonSymlink"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PythonSymlink</span></code></a>([link])</p></td>
+<td><p>Creates a symlink for the current Python executable</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.SaveSignals.html#test.support.SaveSignals" title="test.support.SaveSignals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SaveSignals</span></code></a>()</p></td>
+<td><p>Save and restore signal handlers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.SuppressCrashReport.html#test.support.SuppressCrashReport" title="test.support.SuppressCrashReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SuppressCrashReport</span></code></a>()</p></td>
+<td><p>Try to prevent a crash report from popping up.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.TransientResource.html#test.support.TransientResource" title="test.support.TransientResource"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransientResource</span></code></a>(exc, **kwargs)</p></td>
+<td><p>Raise ResourceDenied if an exception is raised while the context manager is in effect that matches the specified exception and attributes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.WarningsRecorder.html#test.support.WarningsRecorder" title="test.support.WarningsRecorder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WarningsRecorder</span></code></a>(warnings_list)</p></td>
+<td><p>Convenience wrapper for the warnings list returned on entry to the warnings.catch_warnings() context manager.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.catch_threading_exception.html#test.support.catch_threading_exception" title="test.support.catch_threading_exception"><code class="xref py py-obj docutils literal notranslate"><span class="pre">catch_threading_exception</span></code></a>()</p></td>
+<td><p>Context manager catching threading.Thread exception using threading.excepthook.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.catch_unraisable_exception.html#test.support.catch_unraisable_exception" title="test.support.catch_unraisable_exception"><code class="xref py py-obj docutils literal notranslate"><span class="pre">catch_unraisable_exception</span></code></a>()</p></td>
+<td><p>Context manager catching unraisable exception using sys.unraisablehook.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Exceptions</p>
+<div class="table-wrapper longtable docutils container">
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.Error.html#test.support.Error" title="test.support.Error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Error</span></code></a></p></td>
+<td><p>Base class for regression test exceptions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.ResourceDenied.html#test.support.ResourceDenied" title="test.support.ResourceDenied"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ResourceDenied</span></code></a></p></td>
+<td><p>Test skipped because it requested a disallowed resource.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.TestDidNotRun.html#test.support.TestDidNotRun" title="test.support.TestDidNotRun"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TestDidNotRun</span></code></a></p></td>
+<td><p>Test did not run any subtests.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.TestFailed.html#test.support.TestFailed" title="test.support.TestFailed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TestFailed</span></code></a></p></td>
+<td><p>Test failed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.TestFailedWithDetails.html#test.support.TestFailedWithDetails" title="test.support.TestFailedWithDetails"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TestFailedWithDetails</span></code></a>(msg, errors, failures)</p></td>
+<td><p>Test failed.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Modules</p>
+<div class="table-wrapper longtable docutils container">
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.bytecode_helper.html#module-test.support.bytecode_helper" title="test.support.bytecode_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.bytecode_helper</span></code></a></p></td>
+<td><p>bytecode_helper - support tools for testing correct bytecode generation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.hashlib_helper.html#module-test.support.hashlib_helper" title="test.support.hashlib_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.hashlib_helper</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.logging_helper.html#module-test.support.logging_helper" title="test.support.logging_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.logging_helper</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.script_helper.html#module-test.support.script_helper" title="test.support.script_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.script_helper</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.socket_helper.html#module-test.support.socket_helper" title="test.support.socket_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.socket_helper</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="test.support.testresult.html#module-test.support.testresult" title="test.support.testresult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.testresult</span></code></a></p></td>
+<td><p>Test runner and result class for the regression test suite.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="test.support.warnings_helper.html#module-test.support.warnings_helper" title="test.support.warnings_helper"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test.support.warnings_helper</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="test.support.anticipate_failure.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">test.support.anticipate_failure</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="test.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">test</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Jay Rothenberger
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">test.support</a><ul>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>

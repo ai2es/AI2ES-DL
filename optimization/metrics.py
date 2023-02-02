@@ -1,8 +1,17 @@
+import tensorflow as tf
+from tensorflow import keras
+from keras import layers
 
 
 class KID(keras.metrics.Metric):
-    def __init__(self, name, **kwargs):
+    """
+    Kernel Inception Distance
+    """
+
+    def __init__(self, image_size, name='KID', **kwargs):
         super().__init__(name=name, **kwargs)
+
+        kid_image_size = self.image_size[1]
 
         # KID is estimated per batch and is averaged across batches
         self.kid_tracker = keras.metrics.Mean(name="kid_tracker")
@@ -12,7 +21,7 @@ class KID(keras.metrics.Metric):
         # preprocessing as during pretraining
         self.encoder = keras.Sequential(
             [
-                keras.Input(shape=(image_size, image_size, 3)),
+                keras.Input(shape=image_size),
                 layers.Rescaling(255.0),
                 layers.Resizing(height=kid_image_size, width=kid_image_size),
                 layers.Lambda(keras.applications.inception_v3.preprocess_input),
@@ -44,8 +53,10 @@ class KID(keras.metrics.Metric):
         # estimate the squared maximum mean discrepancy using the average kernel values
         batch_size = tf.shape(real_features)[0]
         batch_size_f = tf.cast(batch_size, dtype=tf.float32)
-        mean_kernel_real = tf.reduce_sum(kernel_real * (1.0 - tf.eye(batch_size))) / (batch_size_f * (batch_size_f - 1.0))
-        mean_kernel_generated = tf.reduce_sum(kernel_generated * (1.0 - tf.eye(batch_size * n_gpu))) / (batch_size_f * (batch_size_f - 1.0))
+        mean_kernel_real = tf.reduce_sum(kernel_real * (1.0 - tf.eye(batch_size))) / (
+                    batch_size_f * (batch_size_f - 1.0))
+        mean_kernel_generated = tf.reduce_sum(kernel_generated * (1.0 - tf.eye(batch_size))) / (
+                    batch_size_f * (batch_size_f - 1.0))
         mean_kernel_cross = tf.reduce_mean(kernel_cross)
         kid = mean_kernel_real + mean_kernel_generated - 2.0 * mean_kernel_cross
 

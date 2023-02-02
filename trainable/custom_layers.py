@@ -75,7 +75,7 @@ class TFPositionalEncoding2D(tf.keras.layers.Layer):
 class PCA(tf.keras.layers.Layer):
     """
     Layer that iteratively updates a PCA estimate and transforms the output
-    into the PC space
+    into coordinates in the PC space
 
     inputs: a batch of n-D vectors
     outputs: a batch of 1-D vectors in PC coordinate space
@@ -129,6 +129,10 @@ class PCACompress(tf.keras.layers.Layer):
     inputs: a batch of n-D vectors
     outputs: a batch of n-D vectors reconstructed from PCs
     """
+    def __init__(self, num_outputs):
+        super(PCACompress, self).__init__()
+        self.num_outputs = num_outputs
+        self.Q = None
 
     def Q_init(self, shape, dtype=tf.float32, **kwargs):
         H = tf.random_normal_initializer(0.0, 1.0, 42)(shape, dtype=dtype)
@@ -149,11 +153,6 @@ class PCACompress(tf.keras.layers.Layer):
         Q, R = tf.linalg.qr(S, full_matrices=False, name='name')
 
         self.Q.assign(Q)
-
-    def __init__(self, num_outputs):
-        super(PCA_Compress, self).__init__()
-        self.num_outputs = num_outputs
-        self.Q = None
 
     def build(self, input_shape):
         input_shape = tf.reduce_prod(input_shape[1:])

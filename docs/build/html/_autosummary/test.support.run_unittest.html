@@ -1,0 +1,510 @@
+<!doctype html>
+<html class="no-js">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="test.support.run_with_locale" href="test.support.run_with_locale.html" /><link rel="prev" title="test.support.run_in_subinterp" href="test.support.run_in_subinterp.html" />
+
+    <!-- Generated with Sphinx 4.4.0 and Furo 2022.12.07 -->
+        <title>test.support.run_unittest - AI2ES Deep Learning 2/2/23 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=91d0f0d1c444bdcb17a68e833c7a53903343c195" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">AI2ES Deep Learning 2/2/23 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  
+  <span class="sidebar-brand-text">AI2ES Deep Learning 2/2/23 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="optimization.html">optimization</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="optimization.callbacks.html">optimization.callbacks</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimization.callbacks.EarlyStoppingDifference.html">optimization.callbacks.EarlyStoppingDifference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.callbacks.LossWeightScheduler.html">optimization.callbacks.LossWeightScheduler</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="optimization.schedules.html">optimization.schedules</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.bleed_out.html">optimization.schedules.bleed_out</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.cyclical_adv_lrscheduler25.html">optimization.schedules.cyclical_adv_lrscheduler25</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.schedules.diffusion_schedule.html">optimization.schedules.diffusion_schedule</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="support.html">support</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="support.data_structures.html">support.data_structures</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="support.data_structures.ModelData.html">support.data_structures.ModelData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.data_structures.ModelEvaluator.html">support.data_structures.ModelEvaluator</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="support.util.html">support.util</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="support.util.augment_args.html">support.util.augment_args</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.dict_to_string.html">support.util.dict_to_string</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.generate_fname.html">support.util.generate_fname</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.load_most_recent_results.html">support.util.load_most_recent_results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.load_most_recent_results_with_fnames.html">support.util.load_most_recent_results_with_fnames</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.prep_gpu.html">support.util.prep_gpu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Config.html">support.util.Config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Experiment.html">support.util.Experiment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.JobIterator.html">support.util.JobIterator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="support.util.Results.html">support.util.Results</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="trainable.html">trainable</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.activations.html">trainable.activations</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.hardswish.html">trainable.activations.hardswish</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.int_act_no_slip.html">trainable.activations.int_act_no_slip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.int_act_slip.html">trainable.activations.int_act_slip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.activations.mish.html">trainable.activations.mish</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.custom_layers.html">trainable.custom_layers</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.ConvNeXtV2_block.html">trainable.custom_layers.ConvNeXtV2_block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.ConvNeXt_block.html">trainable.custom_layers.ConvNeXt_block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.GRN.html">trainable.custom_layers.GRN</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.custom_focal_module.html">trainable.custom_layers.custom_focal_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.focal_module.html">trainable.custom_layers.focal_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.get_emb.html">trainable.custom_layers.get_emb</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.DarkLunchboxMHSA.html">trainable.custom_layers.DarkLunchboxMHSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.GlobalResponseNormalization.html">trainable.custom_layers.GlobalResponseNormalization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.PCA.html">trainable.custom_layers.PCA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.PCACompress.html">trainable.custom_layers.PCACompress</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.QLunchboxMHSA.html">trainable.custom_layers.QLunchboxMHSA</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.TFPositionalEncoding2D.html">trainable.custom_layers.TFPositionalEncoding2D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.custom_layers.VLunchboxMHSA.html">trainable.custom_layers.VLunchboxMHSA</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="trainable.losses.html">trainable.losses</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.CE.html">trainable.losses.CE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.NCE.html">trainable.losses.NCE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.identity.html">trainable.losses.identity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trainable.losses.logsum.html">trainable.losses.logsum</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="test.html">test</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="test.support.html">test.support</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="test.support.anticipate_failure.html">test.support.anticipate_failure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.args_from_interpreter_flags.html">test.support.args_from_interpreter_flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.bigaddrspacetest.html">test.support.bigaddrspacetest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.bigmemtest.html">test.support.bigmemtest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.calcobjsize.html">test.support.calcobjsize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.calcvobjsize.html">test.support.calcvobjsize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.can_symlink.html">test.support.can_symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.can_xattr.html">test.support.can_xattr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_output.html">test.support.captured_output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stderr.html">test.support.captured_stderr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stdin.html">test.support.captured_stdin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.captured_stdout.html">test.support.captured_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.change_cwd.html">test.support.change_cwd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check__all__.html">test.support.check__all__</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_free_after_iterating.html">test.support.check_free_after_iterating</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_impl_detail.html">test.support.check_impl_detail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_no_resource_warning.html">test.support.check_no_resource_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_no_warnings.html">test.support.check_no_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_sanitizer.html">test.support.check_sanitizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_sizeof.html">test.support.check_sizeof</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_syntax_error.html">test.support.check_syntax_error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_syntax_warning.html">test.support.check_syntax_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.check_warnings.html">test.support.check_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.clear_ignored_deprecations.html">test.support.clear_ignored_deprecations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.collision_stats.html">test.support.collision_stats</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.cpython_only.html">test.support.cpython_only</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.create_empty_file.html">test.support.create_empty_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.darwin_malloc_err_warning.html">test.support.darwin_malloc_err_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.detect_api_mismatch.html">test.support.detect_api_mismatch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.disable_faulthandler.html">test.support.disable_faulthandler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.disable_gc.html">test.support.disable_gc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.fd_count.html">test.support.fd_count</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.findfile.html">test.support.findfile</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.forget.html">test.support.forget</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.fs_is_case_insensitive.html">test.support.fs_is_case_insensitive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.gc_collect.html">test.support.gc_collect</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.get_attribute.html">test.support.get_attribute</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.get_original_stdout.html">test.support.get_original_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ignore_deprecations_from.html">test.support.ignore_deprecations_from</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ignore_warnings.html">test.support.ignore_warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.impl_detail.html">test.support.impl_detail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.import_fresh_module.html">test.support.import_fresh_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.import_module.html">test.support.import_module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.infinite_recursion.html">test.support.infinite_recursion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.is_resource_enabled.html">test.support.is_resource_enabled</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.join_thread.html">test.support.join_thread</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.load_package_tests.html">test.support.load_package_tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.make_bad_fd.html">test.support.make_bad_fd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.make_legacy_pyc.html">test.support.make_legacy_pyc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.match_test.html">test.support.match_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.maybe_get_event_loop_policy.html">test.support.maybe_get_event_loop_policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.missing_compiler_executable.html">test.support.missing_compiler_executable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.modules_cleanup.html">test.support.modules_cleanup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.modules_setup.html">test.support.modules_setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.no_tracing.html">test.support.no_tracing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.open_dir_fd.html">test.support.open_dir_fd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.open_urlresource.html">test.support.open_urlresource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.optim_args_from_interpreter_flags.html">test.support.optim_args_from_interpreter_flags</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.patch.html">test.support.patch</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.print_warning.html">test.support.print_warning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.python_is_optimized.html">test.support.python_is_optimized</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.reap_children.html">test.support.reap_children</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.reap_threads.html">test.support.reap_threads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.record_original_stdout.html">test.support.record_original_stdout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.refcount_test.html">test.support.refcount_test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires.html">test.support.requires</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_bz2.html">test.support.requires_bz2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_freebsd_version.html">test.support.requires_freebsd_version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_gzip.html">test.support.requires_gzip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_linux_version.html">test.support.requires_linux_version</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_lzma.html">test.support.requires_lzma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_mac_ver.html">test.support.requires_mac_ver</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_resource.html">test.support.requires_resource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.requires_zlib.html">test.support.requires_zlib</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.rmdir.html">test.support.rmdir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.rmtree.html">test.support.rmtree</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_doctest.html">test.support.run_doctest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_in_subinterp.html">test.support.run_in_subinterp</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">test.support.run_unittest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_with_locale.html">test.support.run_with_locale</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.run_with_tz.html">test.support.run_with_tz</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.save_restore_warnings_filters.html">test.support.save_restore_warnings_filters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.set_match_tests.html">test.support.set_match_tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.set_memlimit.html">test.support.set_memlimit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.setswitchinterval.html">test.support.setswitchinterval</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_broken_multiprocessing_synchronize.html">test.support.skip_if_broken_multiprocessing_synchronize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_buggy_ucrt_strfptime.html">test.support.skip_if_buggy_ucrt_strfptime</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_new_parser.html">test.support.skip_if_new_parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_pgo_task.html">test.support.skip_if_pgo_task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_if_sanitizer.html">test.support.skip_if_sanitizer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_unless_symlink.html">test.support.skip_unless_symlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.skip_unless_xattr.html">test.support.skip_unless_xattr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.sortdict.html">test.support.sortdict</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.start_threads.html">test.support.start_threads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.suppress_msvcrt_asserts.html">test.support.suppress_msvcrt_asserts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.swap_attr.html">test.support.swap_attr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.swap_item.html">test.support.swap_item</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.system_must_validate_cert.html">test.support.system_must_validate_cert</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_cwd.html">test.support.temp_cwd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_dir.html">test.support.temp_dir</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.temp_umask.html">test.support.temp_umask</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.threading_cleanup.html">test.support.threading_cleanup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.threading_setup.html">test.support.threading_setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.unlink.html">test.support.unlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.unload.html">test.support.unload</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.use_old_parser.html">test.support.use_old_parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.wait_process.html">test.support.wait_process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.wait_threads_exit.html">test.support.wait_threads_exit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.with_pymalloc.html">test.support.with_pymalloc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.BasicTestRunner.html">test.support.BasicTestRunner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.CleanImport.html">test.support.CleanImport</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.DirsOnSysPath.html">test.support.DirsOnSysPath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.EnvironmentVarGuard.html">test.support.EnvironmentVarGuard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.FakePath.html">test.support.FakePath</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.Matcher.html">test.support.Matcher</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.PythonSymlink.html">test.support.PythonSymlink</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.SaveSignals.html">test.support.SaveSignals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.SuppressCrashReport.html">test.support.SuppressCrashReport</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TransientResource.html">test.support.TransientResource</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.WarningsRecorder.html">test.support.WarningsRecorder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.catch_threading_exception.html">test.support.catch_threading_exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.catch_unraisable_exception.html">test.support.catch_unraisable_exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.Error.html">test.support.Error</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.ResourceDenied.html">test.support.ResourceDenied</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestDidNotRun.html">test.support.TestDidNotRun</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestFailed.html">test.support.TestFailed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="test.support.TestFailedWithDetails.html">test.support.TestFailedWithDetails</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.bytecode_helper.html">test.support.bytecode_helper</a><input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.bytecode_helper.BytecodeTestCase.html">test.support.bytecode_helper.BytecodeTestCase</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.hashlib_helper.html">test.support.hashlib_helper</a><input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.hashlib_helper.requires_hashdigest.html">test.support.hashlib_helper.requires_hashdigest</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.logging_helper.html">test.support.logging_helper</a><input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.logging_helper.TestHandler.html">test.support.logging_helper.TestHandler</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.script_helper.html">test.support.script_helper</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.assert_python_failure.html">test.support.script_helper.assert_python_failure</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.assert_python_ok.html">test.support.script_helper.assert_python_ok</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.interpreter_requires_environment.html">test.support.script_helper.interpreter_requires_environment</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.kill_python.html">test.support.script_helper.kill_python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_pkg.html">test.support.script_helper.make_pkg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_script.html">test.support.script_helper.make_script</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_zip_pkg.html">test.support.script_helper.make_zip_pkg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.make_zip_script.html">test.support.script_helper.make_zip_script</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.run_python_until_end.html">test.support.script_helper.run_python_until_end</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.script_helper.spawn_python.html">test.support.script_helper.spawn_python</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.socket_helper.html">test.support.socket_helper</a><input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.bind_port.html">test.support.socket_helper.bind_port</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.bind_unix_socket.html">test.support.socket_helper.bind_unix_socket</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.find_unused_port.html">test.support.socket_helper.find_unused_port</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.get_socket_conn_refused_errs.html">test.support.socket_helper.get_socket_conn_refused_errs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.skip_unless_bind_unix_socket.html">test.support.socket_helper.skip_unless_bind_unix_socket</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.socket_helper.transient_internet.html">test.support.socket_helper.transient_internet</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.testresult.html">test.support.testresult</a><input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.get_test_runner.html">test.support.testresult.get_test_runner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.get_test_runner_class.html">test.support.testresult.get_test_runner_class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.QuietRegressionTestRunner.html">test.support.testresult.QuietRegressionTestRunner</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.testresult.RegressionTestResult.html">test.support.testresult.RegressionTestResult</a></li>
+</ul>
+</li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="test.support.warnings_helper.html">test.support.warnings_helper</a><input class="toctree-checkbox" id="toctree-checkbox-19" name="toctree-checkbox-19" role="switch" type="checkbox"/><label for="toctree-checkbox-19"><div class="visually-hidden">Toggle child pages in navigation</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_no_resource_warning.html">test.support.warnings_helper.check_no_resource_warning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_no_warnings.html">test.support.warnings_helper.check_no_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_syntax_warning.html">test.support.warnings_helper.check_syntax_warning</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.check_warnings.html">test.support.warnings_helper.check_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.ignore_warnings.html">test.support.warnings_helper.ignore_warnings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.save_restore_warnings_filters.html">test.support.warnings_helper.save_restore_warnings_filters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="test.support.warnings_helper.WarningsRecorder.html">test.support.warnings_helper.WarningsRecorder</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          <section id="test-support-run-unittest">
+<h1>test.support.run_unittest<a class="headerlink" href="#test-support-run-unittest" title="Permalink to this headline">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="test.support.run_unittest">
+<span class="sig-prename descclassname"><span class="pre">test.support.</span></span><span class="sig-name descname"><span class="pre">run_unittest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">classes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#test.support.run_unittest" title="Permalink to this definition">#</a></dt>
+<dd><p>Run tests from unittest.TestCase-derived classes.</p>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="test.support.run_with_locale.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">test.support.run_with_locale</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="test.support.run_in_subinterp.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">test.support.run_in_subinterp</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Jay Rothenberger
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/scripts/furo.js"></script>
+    </body>
+</html>

@@ -179,7 +179,7 @@ def transformer_unet(conv_filters,
             outputs = []
             for i in range(focal_depth):
                 # x = Conv2D(units, 1)(x)
-                x = Conv2D(units, kernel_size=3, activation=HARDSWISH, padding='same')(x)
+                x = Conv2D(units, kernel_size=3, activation=hardswish, padding='same')(x)
                 x = BatchNormalization()(x)
                 outputs.append(x)
             x = GlobalAveragePooling2D(keepdims=True)(x)
@@ -373,20 +373,20 @@ def lunchbox_packer(conv_filters,
         x = LayerNormalization()(x)
 
         x = Reshape((w * h, ch))(x)
-        x = LunchboxMHSA(conv_filters, 4, (w * h) // 4)(x)
+        x = QLunchboxMHSA(conv_filters, 4, (w * h) // 4)(x)
         x = Reshape((w // 2, h // 2, conv_filters))(x)
 
     w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
     x = LayerNormalization()(x)
     x = Reshape((w * h, ch))(x)
-    x = LunchboxMHSA(conv_filters, 4, (w * h))(x)
+    x = QLunchboxMHSA(conv_filters, 4, (w * h))(x)
     x = Reshape((w, h, conv_filters))(x)
 
     for i in range(depth)[::-1]:
         w, h, ch = x.shape[1], x.shape[2], x.shape[-1]
         x = LayerNormalization()(x)
         x = Reshape((w * h, ch))(x)
-        x = LunchboxMHSA(conv_filters, 4, (w * h) * 4)(x)
+        x = QLunchboxMHSA(conv_filters, 4, (w * h) * 4)(x)
         x = Reshape((w * 2, h * 2, conv_filters))(x)
 
     outputs = Dense(3)(x)
