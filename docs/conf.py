@@ -34,7 +34,7 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'python_docs_theme',
+    'python-docs-theme',
 ]
 autosummary_generate = True
 
