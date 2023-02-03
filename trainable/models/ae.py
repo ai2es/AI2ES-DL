@@ -1,5 +1,6 @@
 """
-model building functions should accept only float, int, or string arguments and must return only a compiled keras model
+model building functions should accept only float, int, or string arguments
+and must return only a compiled keras model
 """
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout, SpatialDropout2D, \

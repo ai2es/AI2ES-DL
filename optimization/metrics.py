@@ -5,10 +5,15 @@ from keras import layers
 
 class KID(keras.metrics.Metric):
     """
-    Kernel Inception Distance
+    Kernel Inception Distance Metric.  Measures the dissimilarity between two probability distributions.
+    Lower is better.
     """
 
     def __init__(self, image_size, name='KID', **kwargs):
+        """
+        :param image_size: (w, h, ch) image dimensions
+        :param name: string name for the metric
+        """
         super().__init__(name=name, **kwargs)
 
         kid_image_size = self.image_size[1]

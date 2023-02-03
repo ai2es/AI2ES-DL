@@ -1,10 +1,26 @@
+"""
+Schedules are functions that take integer step numbers and convert them to real values OR
+functions take take values on the interval from [0-1] and convert them to real values
+"""
+
 import tensorflow as tf
 
 
 def bleed_out(lrate=1e-3):
+    """
+    Bleed out learning rate schedule creator.
+
+    :param lrate: starting learning rate
+    :return: bleed out schedule function starting at lrate
+    """
     def schedule(index, lrate=1e-3, minimum=1e-3):
-        # Oscillating learning rate schedule
-        # inspired by https://arxiv.org/abs/1506.01186
+        """Bleed Out Learning Rate Scheduler.
+        :param epoch: integer with current epoch count.
+        :return: float with desired learning rate.
+
+        Oscillating learning rate schedule
+        inspired by https://arxiv.org/abs/1506.01186
+        """
         from math import sin, pi
         x = index + 1
         frac = (1 - minimum) / x ** (1 - sin(2 * pi * (x ** .5)))
@@ -14,12 +30,16 @@ def bleed_out(lrate=1e-3):
 
 
 def cyclical_adv_lrscheduler25(lrate=1e-3):
+    """
+    CAI Cyclical and Advanced Learning Rate Scheduler.
+
+    :param lrate: starting learning rate
+    :return: cyclic schedule function starting at lrate, repeats every 25 epochs
+    """
     def schedule(epoch):
         """CAI Cyclical and Advanced Learning Rate Scheduler.
-        # Arguments
-            epoch: integer with current epoch count.
-        # Returns
-            float with desired learning rate.
+        :param epoch: integer with current epoch count.
+        :return: float with desired learning rate.
         """
         base_learning = lrate
         local_epoch = epoch % 25
@@ -32,6 +52,13 @@ def cyclical_adv_lrscheduler25(lrate=1e-3):
 
 
 def diffusion_schedule(diffusion_times, min_signal_rate=0.02, max_signal_rate=0.95):
+    """
+    Linear diffusion schedule
+
+    :param diffusion_times: number of diffusion steps possible
+    :param min_signal_rate: Min signal rate (1 - max noise rate)
+    :param max_signal_rate: Max signal rate (1 - min noise rate)
+    """
     # diffusion times -> angles
     start_angle = tf.acos(max_signal_rate)
     end_angle = tf.acos(min_signal_rate)

@@ -1,3 +1,7 @@
+"""
+Supervised training loops
+"""
+
 from time import time
 from support.data_structures import ModelData
 
@@ -18,6 +22,9 @@ def keras_supervised(model,
     :param model: keras model
     :param train_dset: tf.data.Dataset for training
     :param val_dset: tf.data.Dataset for evaluation
+    :param network_params: see Config.network_params
+    :param experiment_params: see Config.experiment_params
+    :param callbacks: Callbacks for keras fit training
     :param evaluate_on: a dictionary of finite objects passable to model.evaluate
     :param train_steps: number of steps per epoch
     :param val_steps: number of validations steps per epoch

@@ -1,3 +1,7 @@
+"""
+Callbacks for keras model.fit training
+"""
+
 from tensorflow.keras.callbacks import Callback
 import keras.backend as K
 import numpy as np
@@ -5,6 +9,9 @@ import logging
 
 
 class LossWeightScheduler(Callback):
+    """
+    TODO: this class is unfinished
+    """
     def __init__(self, schedule):
         self.schedule = schedule
         self.alpha = None
@@ -20,7 +27,11 @@ class LossWeightScheduler(Callback):
 
 
 class EarlyStoppingDifference(Callback):
-    """Stop training when the difference between two monitored metrics has stopped improving."""
+    """
+    Stop training when the difference between two monitored metrics has stopped improving.
+
+    Stops when metric_0 - metric_1 reaches a maximum (or minimum based on mode).  Default is maximum.
+    """
 
     def __init__(
         self,
@@ -33,8 +44,21 @@ class EarlyStoppingDifference(Callback):
         baseline=None,
         restore_best_weights=False,
         start_from_epoch=0,
-        n_classes=3,
+        n_classes=1,
     ):
+        """
+        :param metric_0: The first metric to watch, this is the metric subtracted from
+        :param metric_1: The second metric to watch, this is the metric that is subtracted
+        :param min_delta: Minimum amount for difference to change to reset patience
+        :param patience: Number of epochs to wait for metric difference to change
+        :param verbose: Verbosity level
+        :param mode: "min", "max", or "auto" based on whether to minimize, maximize, or automatically choose between the
+                    two for the the metric difference.  Default is "auto."
+        :param baseline: Baseline value to start the metric difference at
+        :param restore_best_weights: Whether or not to restore best weights when patience is met.  Default is False.
+        :param start_from_epoch: Start measuring the metric difference from this epoch. Default is 0.
+        :param n_classes:  Number of classes for classification problem.  Default is 1 (not a classification problem)
+        """
         super().__init__()
 
         self.metric_0 = metric_0

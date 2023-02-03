@@ -1,23 +1,30 @@
+""""
+Mixed / Multi Sample Data Augmentation Methods.
+
+data augmentations functions must require only an input dataset and return only a
+tf.data.Dataset object representing the augmented dataset.  This module includes both
+dataset returning and helper functions.
+"""
+
 import tensorflow as tf
 import numpy as np
 from optimization.data_augmentation.ssda import add_gaussian_noise, custom_rand_augment, get_spectrum, fftfreqnd
 
-"""
-data augmentations functions must require only an input dataset and return only a 
-tf.data.Dataset object representing the augmented dataset
-"""
-
 
 def blended_dset(train_ds, n_blended=2, prob=.5, std=.1, **kwargs):
     """
+    Mixed sample data agumentation method that blends n_blended images via their arithmetic mean.  Weights
+    are chosen from the uniform n_blended-probability simplex.  Gaussian noise with stdev std is added to each
+    image before the mean is taken.
+
     :param train_ds: dataset of training images
     :param batch_size: size of batches to return from the generator
     :param n_blended: number of examples to blend together
-    :param image_size: shape of the input image tensor
-    :param prefetch: number of examples to pre fetch from disk
     :param prob: probability of repacing a training batch with a convex combination of n_blended
     :param std: standard deviation of (mean 0) gaussian noise to add to images before blending
                 (0.0 or equivalently None for no noise)
+
+    :return: a tf.data.Dataset
     """
     # what if we take elements in our dataset and blend them together and predict the mean label?
 
@@ -65,11 +72,15 @@ def blended_dset(train_ds, n_blended=2, prob=.5, std=.1, **kwargs):
 
 def mixup_dset(train_ds, alpha=None, **kwargs):
     """
+    mixup data augmentation strategy proposed in https://arxiv.org/abs/1710.09412.  Alpha is the parameter
+    for a dirichlet distribution from which the weights of two examples are drawn before their weighted
+    mean is returned.
+
     :param train_ds: dataset of batches to train on
-    :param prefetch: number of examples to pre fetch from disk
     :param alpha: Dirichlet parameter.  Weights are drawn from Dirichlet(alpha, ..., alpha) for combining two examples.
                     Empirically choose a value in [.1, .4]
-    :return: a dataset
+
+    :return: a tf.data.Dataset
     """
     # what if we take elements in our dataset and blend them together and predict the mean label?
 
@@ -109,11 +120,13 @@ def mixup_dset(train_ds, alpha=None, **kwargs):
 
 def bc_plus(train_ds, **kwargs):
     """
+    The BC+ data augmentation technique improving upon the work published in https://www.frontiersin.org/articles/10.3389/fnhum.2021.765525/full.
+    The weighted mean of two examples are taken with weights drawn from the uniform distribution.  Their weights are rescaled
+    based on the standard deviation of the image tensors in the examples.  The examples are centered before they are combined.
+
     :param train_ds: dataset of batches to train on
-    :param prefetch: number of examples to pre fetch from disk
-    :param alpha: Dirichlet parameter.  Weights are drawn from Dirichlet(alpha, ..., alpha) for combining two examples.
-                    Empirically choose a value in [.1, .4]
-    :return: a dataset
+
+    :return: a tf.data.Dataset
     """
     # what if we take elements in our dataset and blend them together and predict the mean label?
 
@@ -150,13 +163,20 @@ def bc_plus(train_ds, **kwargs):
     return dataset
 
 
-def generalized_bc_plus(train_ds, n_blended=2, alpha=.25, **kwargs):
+def generalized_bc_plus(train_ds, n_blended=2, alpha=.25, std=0.05, **kwargs):
     """
+    A version of the BC+ data augmentation technique improving upon the work published in
+    https://www.frontiersin.org/articles/10.3389/fnhum.2021.765525/full.  Which has been generalized to more than two images.
+    The weighted mean of two examples are taken with weights drawn from the dirichlet distribution parameterized by alpha.
+    Their weights are not rescaled.  The examples are centered and noised before they are combined.
+
+
     :param train_ds: dataset of batches to train on
     :param n_blended: number of examples to mix
-    :param prefetch: number of examples to pre fetch from disk
     :param alpha: Dirichlet parameter.  Weights are drawn from Dirichlet(alpha, ..., alpha) for combining two examples.
                     Empirically choose a value in [.1, .4]
+    :param std: standard deviation of (mean 0) gaussian noise to add to images before blending
+                (0.0 or equivalently None for no noise)
     :return: a dataset
     """
     # what if we take elements in our dataset and blend them together and predict the mean label?
@@ -171,7 +191,7 @@ def generalized_bc_plus(train_ds, n_blended=2, alpha=.25, **kwargs):
     # create a dataset from which to get batches to blend
     # add gaussian noise to each tensor
     dataset = train_ds.map(
-        lambda x, y: tf.py_function(add_gaussian_noise, inp=[x, y, .05], Tout=(tf.float32, tf.float32)),
+        lambda x, y: tf.py_function(add_gaussian_noise, inp=[x, y, std], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE).batch(n_blended)
 
     def random_weighting(n):
@@ -200,7 +220,18 @@ def generalized_bc_plus(train_ds, n_blended=2, alpha=.25, **kwargs):
     return dataset
 
 
-def fmix(x, y, alpha=.3, delta=3):
+def foff(x, y, alpha=.3, delta=3):
+    """
+    FMix data augmentation strategy function from https://arxiv.org/abs/2002.12047.  Applies the FMix data augmentation
+    strategy to x and y with parameters alpha and delta described in the paper.  Not to be used as a dataset function,
+    this is just the helper.
+
+    :param x: Input image
+    :param y: label (one hot encoded)
+    :param alpha: alpha parameter from the FMix paper
+    :param delta: delta parameter from the FMix paper
+    :return: a mixed instance (x, y)
+    """
     shape = (x.shape[-3], x.shape[-2])
 
     freqs = fftfreqnd(*shape)
@@ -230,7 +261,17 @@ def fmix(x, y, alpha=.3, delta=3):
     return x, y
 
 
-def fuzzy_fmix(x, y, alpha=1.0, delta=3):
+def fuzzy_fmix(x, y, delta=3):
+    """
+    'Fuzzy' version of the FMix data augmentation strategy function from https://arxiv.org/abs/2002.12047.  Applies the
+    FMix data augmentation strategy to x and y without binarizing the fourier mask.  Parameters alpha and delta
+    described in the paper.  Not to be used as a dataset function, this is just the helper.
+
+    :param x: Input image
+    :param y: label (one hot encoded)
+    :param delta: delta parameter from the FMix paper
+    :return: a mixed instance (x, y)
+    """
     shape = (x.shape[-3], x.shape[-2])
 
     freqs = fftfreqnd(*shape)
@@ -260,16 +301,36 @@ def fuzzy_fmix(x, y, alpha=1.0, delta=3):
 
 
 def fmix_dset(train_dset, alpha=0.3, delta=3, **kwargs):
-    dataset = train_dset.map(lambda x, y: tf.py_function(fmix, inp=[x, y, tf.cast(alpha, tf.double),
-                                                                 tf.cast(delta, tf.double)],
-                                                      Tout=(tf.float32, tf.float32)),
+    """
+    FMix data augmentation strategy function from https://arxiv.org/abs/2002.12047.  Applies the FMix data augmentation
+    strategy to x and y with parameters alpha and delta described in the paper.
+
+    :param alpha: alpha parameter from the FMix paper
+    :param delta: delta parameter from the FMix paper
+    :return: an augmented dataset
+    """
+
+    dataset = train_dset.batch(2)
+    dataset = dataset.map(lambda x, y: tf.py_function(foff, inp=[x, y, tf.cast(alpha, tf.double),
+                                                                    tf.cast(delta, tf.double)],
+                                                         Tout=(tf.float32, tf.float32)),
                           num_parallel_calls=tf.data.AUTOTUNE)
 
     return dataset
 
 
-def fast_fourier_fuckup(train_ds, n_blended=2, alpha=1.0, **kwargs):
-    dataset = train_ds.map(lambda x, y: tf.py_function(fuzzy_fmix, inp=[x, y], Tout=(tf.float32, tf.float32)),
+def fast_fourier_fuckup_dset(train_ds, **kwargs):
+    """
+    'Fuzzy' version of the FMix data augmentation strategy function from https://arxiv.org/abs/2002.12047.  Applies the
+    FMix data augmentation strategy to x and y without binarizing the fourier mask.  Parameters alpha and delta
+    described in the paper.
+
+    :param train_ds: dataset of batches to train on
+    :return: an augmented dataset
+    """
+
+    dataset = train_ds.batch(2)
+    dataset = dataset.map(lambda x, y: tf.py_function(fuzzy_fmix, inp=[x, y], Tout=(tf.float32, tf.float32)),
                           num_parallel_calls=tf.data.AUTOTUNE)
 
     return dataset

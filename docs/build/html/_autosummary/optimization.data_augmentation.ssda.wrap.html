@@ -1,51 +1,211 @@
 
+
 <!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>optimization.data_augmentation.ssda.wrap &mdash; AI2ES Deep Learning 2/2/23 documentation</title>
+  
 
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/fonts.css" type="text/css" />
 
-    <title>optimization.data_augmentation.ssda.wrap &#8212; AI2ES Deep Learning 2/2/23 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/groundwork.css" />
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="optimization.training_loops" href="optimization.training_loops.html" />
+    <link rel="next" title="data" href="data.html" />
     <link rel="prev" title="optimization.data_augmentation.ssda.unwrap" href="optimization.data_augmentation.ssda.unwrap.html" /> 
-  </head><body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="optimization.training_loops.html" title="optimization.training_loops"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="optimization.data_augmentation.ssda.unwrap.html" title="optimization.data_augmentation.ssda.unwrap"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">AI2ES Deep Learning 2/2/23 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="optimization.data_augmentation.html" >optimization.data_augmentation</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="optimization.data_augmentation.ssda.html" accesskey="U">optimization.data_augmentation.ssda</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">optimization.data_augmentation.ssda.wrap</a></li> 
-      </ul>
-    </div>  
+</head>
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body" role="main">
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> AI2ES Deep Learning
+          
+
+          
+          </a>
+
+          
             
-  <section id="optimization-data-augmentation-ssda-wrap">
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="optimization.html">optimization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimization.training_loops.html">optimization.training_loops</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="optimization.data_augmentation.html">optimization.data_augmentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="optimization.data_augmentation.msda.html">optimization.data_augmentation.msda</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="optimization.data_augmentation.ssda.html">optimization.data_augmentation.ssda</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.add_gaussian_noise.html">optimization.data_augmentation.ssda.add_gaussian_noise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.add_gaussian_noise_dset.html">optimization.data_augmentation.ssda.add_gaussian_noise_dset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.arithmetic_blend.html">optimization.data_augmentation.ssda.arithmetic_blend</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.blend.html">optimization.data_augmentation.ssda.blend</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.custom_rand_augment.html">optimization.data_augmentation.ssda.custom_rand_augment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.custom_rand_augment_dset.html">optimization.data_augmentation.ssda.custom_rand_augment_dset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.fftfreqnd.html">optimization.data_augmentation.ssda.fftfreqnd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.flip_lr.html">optimization.data_augmentation.ssda.flip_lr</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.flip_ud.html">optimization.data_augmentation.ssda.flip_ud</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.foff_dset.html">optimization.data_augmentation.ssda.foff_dset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.fout.html">optimization.data_augmentation.ssda.fout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.from_4d.html">optimization.data_augmentation.ssda.from_4d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.geometric_blend.html">optimization.data_augmentation.ssda.geometric_blend</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.get_spectrum.html">optimization.data_augmentation.ssda.get_spectrum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.identity.html">optimization.data_augmentation.ssda.identity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.rotate.html">optimization.data_augmentation.ssda.rotate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.shear_x.html">optimization.data_augmentation.ssda.shear_x</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.shear_y.html">optimization.data_augmentation.ssda.shear_y</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.to_4d.html">optimization.data_augmentation.ssda.to_4d</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.transform.html">optimization.data_augmentation.ssda.transform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.translate.html">optimization.data_augmentation.ssda.translate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.translate_x.html">optimization.data_augmentation.ssda.translate_x</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.translate_y.html">optimization.data_augmentation.ssda.translate_y</a></li>
+<li class="toctree-l3"><a class="reference internal" href="optimization.data_augmentation.ssda.unwrap.html">optimization.data_augmentation.ssda.unwrap</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">optimization.data_augmentation.ssda.wrap</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.datasets.html">data.datasets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.evaluations.html">support.evaluations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="trainable.html">trainable</a></li>
+<li class="toctree-l1"><a class="reference internal" href="trainable.models.html">trainable.models</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">AI2ES Deep Learning</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+<div class="git-ribbon">
+  <a href="http://github.com/SwissDataScienceCenter" rel="me">Join us on GitHub</a>
+</div>
+
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="optimization.data_augmentation.html">optimization.data_augmentation</a> &raquo;</li>
+        
+          <li><a href="optimization.data_augmentation.ssda.html">optimization.data_augmentation.ssda</a> &raquo;</li>
+        
+      <li>optimization.data_augmentation.ssda.wrap</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/_autosummary/optimization.data_augmentation.ssda.wrap.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="optimization-data-augmentation-ssda-wrap">
 <h1>optimization.data_augmentation.ssda.wrap<a class="headerlink" href="#optimization-data-augmentation-ssda-wrap" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="optimization.data_augmentation.ssda.wrap">
@@ -53,70 +213,54 @@
 <dd><p>Returns ‘image’ with an extra channel set to all 1s.</p>
 </dd></dl>
 
-</section>
-
-
-            <div class="clearer"></div>
-          </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-  <div>
-    <h4>Previous topic</h4>
-    <p class="topless"><a href="optimization.data_augmentation.ssda.unwrap.html"
-                          title="previous chapter">optimization.data_augmentation.ssda.unwrap</a></p>
-  </div>
-  <div>
-    <h4>Next topic</h4>
-    <p class="topless"><a href="optimization.training_loops.html"
-                          title="next chapter">optimization.training_loops</a></p>
-  </div>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/_autosummary/optimization.data_augmentation.ssda.wrap.rst.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="data.html" class="btn btn-neutral float-right" title="data" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="optimization.data_augmentation.ssda.unwrap.html" class="btn btn-neutral float-left" title="optimization.data_augmentation.ssda.unwrap" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2023, Jay Rothenberger.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="optimization.training_loops.html" title="optimization.training_loops"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="optimization.data_augmentation.ssda.unwrap.html" title="optimization.data_augmentation.ssda.unwrap"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">AI2ES Deep Learning 2/2/23 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="optimization.data_augmentation.html" >optimization.data_augmentation</a> &#187;</li>
-          <li class="nav-item nav-item-2"><a href="optimization.data_augmentation.ssda.html" >optimization.data_augmentation.ssda</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">optimization.data_augmentation.ssda.wrap</a></li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2023, Jay Rothenberger.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.4.0.
-    </div>
-  </body>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
 </html>

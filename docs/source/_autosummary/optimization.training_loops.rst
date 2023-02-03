@@ -28,6 +28,6 @@
    :template: custom-module-template.rst
    :recursive:
 
-   optimization.training_loops.self-supervised
+   optimization.training_loops.self_supervised
    optimization.training_loops.supervised
 

@@ -1,3 +1,9 @@
+"""
+data loading functions must only return a dictionary of this form:
+{'train': train_dset, 'val': val_dset, 'test': test_dset, 'classes': list[ str]}
+where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
+"""
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 

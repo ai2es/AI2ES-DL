@@ -32,8 +32,8 @@ see `test.py <https://github.com/ai2es/AI2ES-DL/blob/unstable/test.py>`_ for an 
    :recursive:
 
    optimization
-   optimization.data_augmentation
    optimization.training_loops
+   optimization.data_augmentation
    data
    data.datasets
    support

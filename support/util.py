@@ -1,3 +1,8 @@
+"""
+Utility functions for model training and result storage
+"""
+
+
 import os
 import pickle
 from itertools import product

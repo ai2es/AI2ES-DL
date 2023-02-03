@@ -1,3 +1,9 @@
+"""
+data loading functions must only return a dictionary of this form:
+{'train': train_dset, 'val': val_dset, 'test': test_dset, 'classes': list[ str]}
+where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
+"""
+
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -5,12 +11,6 @@ import numpy as np
 
 from data.datasets.util import df_from_dirlist, to_dataset, report_df
 from PIL import Image
-
-"""
-data loading functions must only return a dictionary of this form:
-{'train': train_dset, 'val': val_dset, 'test': test_dset}
-where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
-"""
 
 
 def cats_dogs(batch_size=16, image_size=(128, 128, 3), cache=False, prefetch=4, **kwargs):
