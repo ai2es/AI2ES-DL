@@ -19,6 +19,18 @@ import pynvml
 
 
 class Config:
+    """
+    Configuration object for experiments.  Stores all of the information necessary to perform a deep learning experiment
+    using this library.  Config consists of five dictionaries of parameters described below.
+
+    :param hardware_params:
+    :param network_params:
+    :param dataset_params:
+    :param experiment_params:
+    :param optimization_params:
+
+    """
+    # this is bad practice I think, TODO: remove
     hardware_params = None
     network_params = None
     dataset_params = None
