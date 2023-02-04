@@ -14,7 +14,11 @@ import tensorflow as tf
 
 def explain_image_classifier_with_lime(model, instance, n_classes):
     """
-    show a visual explanation using LIME for an image classification keras Model and a image instance with matplotlib
+    plt.show a visual explanation using LIME for an image classification keras Model and a image instance with matplotlib
+
+    :param model: keras model to explain
+    :param instance: model input image
+    :param n_classes: number of output classes
     """
     instance = np.array(instance)
     explainer = lime_image.LimeImageExplainer(kernel_width=.125)
@@ -27,6 +31,13 @@ def explain_image_classifier_with_lime(model, instance, n_classes):
 
 
 def explain_image_classifier_with_shap(model, instance, class_names):
+    """
+    plt.show a visual explanation using SHAP for an image classification keras Model and a image instance with matplotlib
+
+    :param model: keras model to explain
+    :param instance: model input image
+    :param class_names: names of output classes
+    """
     instance = np.array(instance).astype(np.double)
     print(instance.shape)
     # define a masker that is used to mask out partitions of the input image, this one uses a blurred background
@@ -41,6 +52,13 @@ def explain_image_classifier_with_shap(model, instance, class_names):
 
 
 def min_max_normalize_image(image):
+    """
+    helper function that transforms an image such that it takes up the entire brightness range.  Used to display
+    images that were centered for training.
+
+    :param image: any image format
+    :return: normalized image
+    """
     image = tf.reduce_sum(image, -1)
 
     image -= tf.reduce_min(image)
@@ -50,8 +68,13 @@ def min_max_normalize_image(image):
 
 
 def explain_image_classifier_with_saliency(model, instance):
-    # instance = np.array(instance).astype(np.double)
-    # instance = np.expand_dims(instance, 0)
+    """
+    plt.show a visual explanation using saliency for an image classification keras Model and a image instance with
+    matplotlib
+
+    :param model: keras model to explain
+    :param instance: model input image
+    """
     instance = tf.convert_to_tensor(instance)
     instance = tf.cast(instance, tf.double)
 
@@ -195,6 +218,9 @@ def color_squish(x):
     """
     squishes a tensor of (rows, columns, channels) to a tensor of (rows, columns, RGB (3)) using the color alphabet
     channels must be less than or equal to 26.
+
+    :param x: input image tensor
+    :return: RGB image with each of the channels of the input tensor assigned to a unique color
     """
     # a couple candidate colors
     colors = [(240, 163, 255), (0, 117, 220), (153, 63, 0), (76, 0, 92), (25, 25, 25), (0, 92, 49),

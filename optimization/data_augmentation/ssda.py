@@ -439,6 +439,7 @@ def rotate(image: tf.Tensor, range: float) -> tf.Tensor:
 
 
 def flip_ud(image: tf.Tensor, range: float) -> tf.Tensor:
+    """flips image up to down"""
     if np.random.uniform(0, 1, 1) < range:
         return tf.image.flip_up_down(image)
     else:
