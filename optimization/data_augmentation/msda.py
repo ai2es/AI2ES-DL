@@ -1,5 +1,4 @@
-""""
-Mixed / Multi Sample Data Augmentation Methods.
+""""Mixed / Multi Sample Data Augmentation Methods.
 
 data augmentations functions must require only an input dataset and return only a
 tf.data.Dataset object representing the augmented dataset.  This module includes both
