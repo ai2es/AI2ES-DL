@@ -1,13 +1,26 @@
+"""
+Activation functions for neural network layers
+"""
+
 import tensorflow as tf
 
-hardswish = lambda x: x * tf.nn.relu6(x + 3) / 6
 
-mish = lambda x: x * tf.nn.tanh(tf.nn.softplus(x))
+def hardswish(x):
+    """Hardswish activation function"""
+    return x * tf.nn.relu6(x + 3) / 6
+
+
+def mish(x):
+    """Mish activation function"""
+    return x * tf.nn.tanh(tf.nn.softplus(x))
 
 
 def int_act_slip(x):
-    # activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
-    # this step function has slippery steps
+    """
+    activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
+    this step function has slippery steps, e.g. the function is monotonic increasing.
+    """
+
     s = .1
     m = tf.math.negative(tf.ones_like(x)) * (1 + s)
     m = tf.math.reciprocal(m)
@@ -30,8 +43,10 @@ def int_act_slip(x):
 
 
 def int_act_no_slip(x):
-    # activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
-    # this step function has inwardly sloping steps
+    """
+    activation function that just pushes every real number closer to its closest integer (except x % 1 = .5)
+    this step function has slippery steps, e.g. the function is not monotonic increasing.
+    """
     s = .1
     m = tf.math.negative(tf.ones_like(x) * (1 - s))
     m = tf.math.reciprocal(m)

@@ -1,3 +1,10 @@
+"""
+Evaluations outside of just performance statistics for image classification models
+
+contains mostly XAI techniques for model explanation and helper methods.
+"""
+
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -168,6 +175,12 @@ def to_shape(a, shape):
 
 
 def get_mask(model, image):
+    """
+    get the class occlusion masks from a LAX model for a batch of images
+
+    :param model: keras model with CAM/CLAM layers somewhere
+    :param image: input image (or batch)
+    """
     model = model.get_model()
     new_outputs = []
     d = -1
@@ -222,7 +235,7 @@ def color_squish(x):
     :param x: input image tensor
     :return: RGB image with each of the channels of the input tensor assigned to a unique color
     """
-    # a couple candidate colors
+    # a couple candidate colors from the color alphabet
     colors = [(240, 163, 255), (0, 117, 220), (153, 63, 0), (76, 0, 92), (25, 25, 25), (0, 92, 49),
               (43, 206, 72), (255, 204, 153), (128, 128, 128), (148, 255, 181), (143, 124, 0), (157, 204, 0),
               (194, 0, 136), (0, 51, 128), (255, 164, 5), (255, 168, 187), (66, 102, 0), (255, 0, 16),
@@ -234,17 +247,16 @@ def color_squish(x):
     return np.array(tf.einsum('ijk,kl->ijl', x, colors)).astype(np.uint8), colors
 
 
-def show_mask(dset, num_images, model, class_names, fname=''):
+def show_mask(dset, num_images, model, class_names):
     """
-    show the composite mask, image, masked image figure for thrifty cam networks
+    show the composite mask, image, masked image figure for LAX networks
 
     :param dset: dataset from which to draw examples to explain
     :param num_images: number of images to draw
     :param model: modeldata for the model to explain
     :param class_names: list of class names (in order of their integer value)
-    :param fname:
     """
-    from PIL import Image
+
     values = []
     masks = []
     none = []
@@ -306,13 +318,13 @@ def show_mask(dset, num_images, model, class_names, fname=''):
 
 def masking_evaluation(model, dset, class_names, n=1):
     """
-    return the best and worst cases for masking
-    
-    I want:
-    - orthogonal cases (cosine similarity change)
-    - cases where the predicted probability is reduced the most
-    - colinear cases
-    - cases in which the predicted probability is reduced the least
+    display the best and worst cases for masking in terms of the occlusion objective for each batch until n examples
+    for each class have been gathered.
+
+    :param model: keras model
+    :param dset: dataset from which to draw batches
+    :param class_names: ordered list of class names
+    :param n: number of examples to show for each class
     """
     
     values = []
@@ -466,4 +478,3 @@ def masking_evaluation(model, dset, class_names, n=1):
         labeled_multi_image([img, im, ima], len(to_label(label, normed)), row_labs=['overlay', 'mask', 'input image'],
                             col_labs=to_label(label, normed),
                             colors=colors, class_names=class_names)
-        

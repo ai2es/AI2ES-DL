@@ -1,3 +1,9 @@
+"""
+Nominally convolutional neural networks
+
+model building functions should accept only float, int, or string arguments and must return only a compiled keras model
+"""
+
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout, \
     BatchNormalization, GlobalMaxPooling2D
@@ -8,13 +14,20 @@ from time import time
 from trainable.models.ae import transformer_unet, vit_unet
 from trainable.custom_layers import ConvNeXtV2_block
 
-"""
-model building functions should accept only float, int, or string arguments and must return only a compiled keras model
-"""
-
 
 def build_keras_application(application, image_size=(256, 256, 3), learning_rate=1e-4, loss='categorical_crossentropy',
                             n_classes=10, dropout=0, **kwargs):
+    """
+    Helper function for loading keras application convolutional networks for image classification
+
+    :param application: keras application loading function
+    :param image_size: input image dimensions
+    :param learning_rate: learning rate for training
+    :param loss: loss function
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
     inputs = Input(image_size)
 
     try:
@@ -43,6 +56,14 @@ def build_keras_application(application, image_size=(256, 256, 3), learning_rate
 
 
 def build_special_VGG(image_size, classes=(3, 4, 5), learning_rate=1e-3, loss='categorical_crossentropy'):
+    """
+    Build a special VGG network that can output multiple numbers of classes for each output layer
+
+    :param image_size: input image dimensions
+    :param classes: tuple of numbers of output classes
+    :param learning_rate: learning rate
+    :param loss: loss function for each output
+    """
     inputs = Input(image_size)
     # load VGG16 with imagenet weights
     model = VGG16(input_tensor=inputs, include_top=False, weights='imagenet', pooling='avg',
@@ -69,14 +90,47 @@ def build_special_VGG(image_size, classes=(3, 4, 5), learning_rate=1e-3, loss='c
 
 
 def build_EfficientNetB0(**kwargs):
+    """
+    Load the EfficientNetB0 keras application
+
+    :param application: keras application loading function
+    :param image_size: input image dimensions
+    :param learning_rate: learning rate for training
+    :param loss: loss function
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
     return build_keras_application(EfficientNetB0, **kwargs)
 
 
 def build_ResNet50V2(**kwargs):
+    """
+    Load the ResNet50V2 keras application
+
+    :param application: keras application loading function
+    :param image_size: input image dimensions
+    :param learning_rate: learning rate for training
+    :param loss: loss function
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
     return build_keras_application(ResNet50V2, **kwargs)
 
 
 def build_MobileNetV3Small(**kwargs):
+    """
+    Load the MobileNetV3Small keras application
+
+    :param application: keras application loading function
+    :param image_size: input image dimensions
+    :param learning_rate: learning rate for training
+    :param loss: loss function
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
     return build_keras_application(MobileNetV3Small, **kwargs)
 
 
@@ -85,13 +139,29 @@ def build_basic_cnn(conv_filters,
                     dense_layers,
                     learning_rate,
                     image_size,
-                    iterations=24,
                     loss='categorical_crossentropy',
                     l1=None, l2=None,
                     activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                     n_classes=10,
-                    skips=2,
                     **kwargs):
+    """
+    Build a basic VGG-like convolutional neural network
+
+    :param conv_filters: string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the number
+                         of convolutional filters in each layer
+    :param conv_size: string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the size
+                         of convolutional kernels in each layer.  Must have same length as the previous "list"
+    :param dense_layers:string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the size
+                         of dense layers (number of units in each layer) for each dense layer.
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param loss: loss function
+    :param l1: l1 regularization term weight
+    :param l2: l2 regularization term weight
+    :param activation: activation function
+    :param n_classes: number of output classes
+    :return: a compiled keras model
+    """
     if isinstance(conv_filters, str):
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
     if isinstance(conv_size, str):
@@ -153,15 +223,32 @@ def build_basic_cnn(conv_filters,
 
 
 def build_basic_convnextv2(conv_filters,
-                         dense_layers,
-                         learning_rate,
-                         image_size,
-                         loss='categorical_crossentropy',
-                         l1=None,
-                         l2=None,
-                         activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
-                         n_classes=10,
-                         **kwargs):
+                           dense_layers,
+                           learning_rate,
+                           image_size,
+                           loss='categorical_crossentropy',
+                           l1=None,
+                           l2=None,
+                           activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                           n_classes=10,
+                           **kwargs):
+    """
+    Build a basic ConvNextV2-like convolutional neural network
+
+    :param conv_filters: string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the number
+                         of convolutional filters in each ConvNextV2 block
+    :param dense_layers:string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the size
+                         of dense layers (number of units in each layer) for each dense layer.
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param loss: loss function
+    :param l1: l1 regularization term weight
+    :param l2: l2 regularization term weight
+    :param activation: activation function
+    :param n_classes: number of output classes
+    :return: a compiled keras model
+    """
+
 
     conv_params = {
         'use_bias': False,

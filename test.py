@@ -23,7 +23,7 @@ hardware_params must include:
     'partition': str
     'time': str (we will just write this to the file)
     'memory': uint
-    'distributed': bool
+    'results_dir': str
 """
 hardware_params = {
     'name': 'hparam',
@@ -78,7 +78,6 @@ experiment_params must include:
     
     'seed': random seed for computation
     'steps_per_epoch': uint
-    'validation_steps': uint
     'patience': uint
     'min_delta': float
     'epochs': uint
@@ -89,7 +88,6 @@ experiment_params must include:
 experiment_params = {
     'seed': 42,
     'steps_per_epoch': 512,
-    'validation_steps': 256,
     'patience': 3,
     'min_delta': 0.0,
     'epochs': 64,
@@ -118,6 +116,12 @@ dataset_params = {
     'shuffle': True,
     'augs': []
 }
+
+"""
+optimization_params must include:
+    'callbacks':  iterable - callbacks for training
+    'training_loop': callable - training loop to use for model weight update
+"""
 
 optimization_params = {
     'callbacks': [

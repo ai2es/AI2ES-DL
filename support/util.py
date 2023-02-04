@@ -23,12 +23,50 @@ class Config:
     Configuration object for experiments.  Stores all of the information necessary to perform a deep learning experiment
     using this library.  Config consists of five dictionaries of parameters described below.
 
-    :param hardware_params:
-    :param network_params:
-    :param dataset_params:
-    :param experiment_params:
-    :param optimization_params:
+    :param hardware_params: only relevant for OSCER users, or potentially other SLURM based systems.  Includes the
+        hardware parameters for the experiment.
+        hardware_params must include:
+            'n_gpu': uint - number of gpus to use for the experiment training
+            'n_cpu': uint - number of cpu threads to use for training
+            'node': str - name of compute node if applicable
+            'partition': str - name of resource partition if applicable
+            'time': str (we will just write this to the file) - max training time for slurm request
+            'memory': uint - number of megabytes of RAM to allocate for SLURM request
+            'results_dir': str - results directory local to ../
+    :param network_params: parameters for building the network for training
+        network_params must include:
+            'network_fn': callable - network building function
+            'network_args': dict - arguments to pass to network building function
+                network_args must include:
+                    'lrate': float - learning rate
+            'hyperband': bool - whether or not to use hyperband hyperparameter search algorithm
+    :param dataset_params: dataset parameter for training the network
+        dataset_params must include:
+            'dset_fn': callable - dataset loading function
+            'dset_args': dict - arguments for dataset loading function
+            'cache': str or bool - whether or not to cache the dataset (tf dataset caching has a memory leak)
+            'batch': uint - batch size
+            'prefetch': uint - prefetched batches
+            'shuffle': bool - whether or not to shuffle after each epoch
+            'augs': iterable - data augmentation functions
+    :param experiment_params: miscellaneous experiment parameters for reproduceability and optimization
+        experiment_params must include:
+            'seed': int - random seed for computation
+            'steps_per_epoch': uint - steps per epoch
+            'patience': uint - patience for early stopping
+            'min_delta': float - min delta for early stopping metric
+            'epochs': uint - maximum number of training epochs
+            'nogo': bool - if True model will not be trained
+    :param optimization_params: parameter for model optimization
+        optimization_params must include:
+            'callbacks':  iterable - callbacks for training
+            'training_loop': callable - training loop to use for model weight update
 
+    methods:
+        dump - dump config to a file
+            :param fp: file pointer
+        load - load fp from a file
+            :param fp: file pointer
     """
     # this is bad practice I think, TODO: remove
     hardware_params = None
@@ -61,10 +99,11 @@ class Config:
 
 class Results:
     """
-        includes:
-            config
-            experiment
-            model data
+    Convenience structure for storing results of training.  This is what will be pickled and stored in the results
+    directory.  This structure contains all information required to summarize and analyze the experiment.
+
+    :param experiment: Experiment object after training
+    :param model_data: ModelData object after training
     """
 
     def __init__(self, experiment, model_data):
@@ -85,6 +124,7 @@ class Results:
             print("Note that callbacks cannot be serialized, so string representations will be serialized instead")
 
     def summary(self):
+        """summarize the model training run"""
         metrics = [key for key in self.model_data.history]
         patience = self.config.experiment_params['patience']
         epochs = len(self.model_data.history['loss'])
@@ -187,7 +227,14 @@ def load_most_recent_results_with_fnames(d, n=1):
 
 
 def dict_to_string(d: dict, prefix="\t"):
-    # print each key/value pair from the dict on a new line
+    """
+    helper method for pretty printing dictionaries.
+    print each key/value pair from the dict on a new line
+
+    :param d: (dict) a dictionary
+    :param prefix: (string) prefix to append to delineate different levels
+                   of dict hierarchy
+    """
     s = "{\n"
     for k in d:
         if isinstance(d[k], dict):
@@ -219,6 +266,10 @@ def load_most_recent_results(d, n=1):
 
 
 class JobIterator():
+    """
+    JobIterator object used to define the order of an array of experiments. By Andrew H. Fagg,
+    modified by Jay Rothenberger
+    """
     def __init__(self, params):
         """
         Constructor
@@ -291,7 +342,13 @@ class JobIterator():
 
 
 def prep_gpu(cpus_per_task, gpus_per_task=0, wait=True):
-    """prepare the GPU for tensorflow computation"""
+    """
+    prepare the GPU for tensorflow computation
+
+    :param cpus_per_task: number of threads to use for training
+    :param gpus_per_task: number of gpu devices to use for training
+    :param wait: if True wait from 0 to 5 minutes before allocating gpu memory
+    """
     # initialize the nvidia management library
     pynvml.nvmlInit()
     # if we are not to use the gpu, then disable them
@@ -352,7 +409,7 @@ def generate_fname(args):
 
     :param args: from argParse
     :params_str: String generated by the JobIterator
-    :return: a string (file name prefix)
+    :return: a string (file name prefix) - just the last 6 digits of timestamp
     """
     return f"{str(time()).replace('.', '')[-6:]}"
 
@@ -360,6 +417,8 @@ def generate_fname(args):
 class Experiment:
     """
         The Experiment class is used to run and enqueue deep learning jobs with a config dict
+
+        :param config: a Config object
     """
 
     def __init__(self, config):

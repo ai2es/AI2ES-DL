@@ -1,8 +1,11 @@
 """
-model building functions should accept only float, int, or string arguments and must return only a compiled keras model
+Transformer architectures for images
+
+model building functions should accept only float, int, or string arguments
+and must return only a compiled keras model
 """
 import tensorflow as tf
-from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout,\
+from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout, \
     BatchNormalization, GlobalMaxPooling2D, Multiply, LayerNormalization, MultiHeadAttention, Reshape, Add
 
 from trainable.custom_layers import TFPositionalEncoding2D, focal_module, GlobalResponseNormalization
@@ -13,17 +16,32 @@ from trainable.models.ae import transformer_unet, vit_unet
 
 from time import time
 
-def fast_fourier_transformer(
-                             learning_rate,
-                             image_size,
-                             attention_heads,
-                             loss='categorical_crossentropy',
-                             l1=None, l2=None,
-                             n_classes=10,
-                             dropout=0.0,
-                             **kwargs
-                            ):
 
+def fast_fourier_transformer(
+        learning_rate,
+        image_size,
+        attention_heads,
+        loss='categorical_crossentropy',
+        l1=None, l2=None,
+        n_classes=10,
+        dropout=0.0,
+        **kwargs
+):
+    """
+    The fast fourier transformer.  A linear embedding is used for 4x4 patches, and then subsequent layers are
+    multi-headed self-attention where the V is the input, Q is the real component of the FFT of the input, and
+    K is the imaginary component.
+
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param attention_heads: number of attention heads in each transformer layer
+    :param loss: loss function
+    :param l1: l1 regularization term weight
+    :param l2: l2 regularization term weight
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
     conv_params = {
         'use_bias': True,
         'kernel_initializer': tf.keras.initializers.LecunNormal(),
@@ -121,10 +139,26 @@ def fast_fourier_transformer(
     return model
 
 
-def build_focal_modulator(image_size, n_classes, e_dim=24, learning_rate=1e-3, blocks=5, depth=3,
-                          loss='categorical_crossentropy', **kwargs):
+def build_focal_modulator(image_size,
+                          n_classes,
+                          e_dim=24,
+                          learning_rate=1e-3,
+                          blocks=5,
+                          depth=3,
+                          loss='categorical_crossentropy',
+                          **kwargs):
+
     """
     simple image classification network built with focal modules
+
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param e_dim: number of filters in the first convolutional block\
+    :param learning_rate: learning rate
+    :param blocks: number of modulation blocks
+    :param depth: depth of each modulation block
+    :param loss: loss function
+    :return: a compiled keras model
     """
     inputs = Input(image_size)
     x = inputs
@@ -132,7 +166,7 @@ def build_focal_modulator(image_size, n_classes, e_dim=24, learning_rate=1e-3, b
     x = Conv2D(e_dim, kernel_size=4, strides=4)(x)
     for i in range(blocks):
         skip = x
-        x = focal_module(x.shape[1:], 24 * (i + 1), depth)(x)
+        x = focal_module(24 * (i + 1), depth)(x)
         skip = Conv2D(x.shape[-1], 1)(skip)
         x = Add()([x, skip])
         x = MaxPooling2D(2, 2)(x)
@@ -157,16 +191,31 @@ def build_focal_modulator(image_size, n_classes, e_dim=24, learning_rate=1e-3, b
     return model
 
 
-def build_conv_LAXNet(conv_filters,
+def build_focal_LAXNet(conv_filters,
                       learning_rate,
                       image_size,
                       n_classes=10,
                       alpha=1e-3,
                       beta=1e-3,
-                      gamma=1e-4,
+                      gamma=0.0,
                       noise_level=0.05,
                       depth=5,
                       **kwargs):
+    """
+    LAX image classification network built with focal modules
+
+    :param conv_filters: Convolutional filters in the first convolutional block
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param alpha: Masking loss weight
+    :param beta: NCE loss weight
+    :param gamma: Penalty for masking a pixel loss weight
+    :param noise_level: standard deviation of noise to add to masked pixels
+    :param depth: depth of 'U' in the image-to-image model
+    :return: a compiled keras model
+
+    """
 
     # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
@@ -257,23 +306,31 @@ def build_conv_LAXNet(conv_filters,
     return model
 
 
-def build_focal_LAXNet(conv_filters,
-                       conv_size,
-                       dense_layers,
+def build_conv_LAXNet(conv_filters,
                        learning_rate,
                        image_size,
-                       iterations=24,
-                       loss='categorical_crossentropy',
-                       l1=None, l2=None,
-                       activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                        n_classes=10,
-                       skips=2,
                        alpha=1e-3,
                        beta=1e-3,
                        gamma=1e-4,
                        noise_level=0.05,
                        depth=5,
                        **kwargs):
+    """
+    LAX image classification network built with convolution and attention modules
+
+    :param conv_filters: Convolutional filters in the first convolutional block
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param alpha: Masking loss weight
+    :param beta: NCE loss weight
+    :param gamma: Penalty for masking a pixel loss weight
+    :param noise_level: standard deviation of noise to add to masked pixels
+    :param depth: depth of 'U' in the image-to-image model
+    :return: a compiled keras model
+
+    """
     # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
     def mask_plurality(image_size, cam_size, pred_size):
@@ -373,7 +430,6 @@ def build_basic_lunchbox(conv_filters,
                          activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                          n_classes=10,
                          **kwargs):
-
     conv_params = {
         'use_bias': False,
         'kernel_initializer': tf.keras.initializers.GlorotUniform(),
@@ -402,7 +458,6 @@ def build_basic_lunchbox(conv_filters,
         x = Reshape((w * h, ch))(x)
         x = LunchboxMHSA(block, 4, (w * h) // 4)(x)
         x = Reshape((w // 2, h // 2, block))(x)
-
 
     # this dense operation is over an input tensor of size (batch, width, height, channels)
     # semantic segmentation output with extra (irrelevant) channel

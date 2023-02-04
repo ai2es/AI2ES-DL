@@ -1,4 +1,6 @@
 """
+Image to image models
+
 model building functions should accept only float, int, or string arguments
 and must return only a compiled keras model
 """
@@ -23,6 +25,17 @@ def clam_unet(conv_filters,
               n_classes=10,
               depth=3,
               **kwargs):
+    """
+    LAX fully convolutional U-net.
+
+    :param image_size: input image dimensions
+    :param l1: l1 regularization coefficient
+    :param l2: l2 regularization coefficient
+    :param activation: activation function
+    :param n_classes: number of channels in the output occlusion masks
+    :param depth: depth of the 'U'
+    :return: a keras model
+    """
     inputs = Input(image_size)
 
     conv_params = {
@@ -87,6 +100,18 @@ def unet(conv_filters,
          n_classes=10,
          depth=3,
          **kwargs):
+    """
+    LAX fully convolutional U-net.
+
+    :param conv_filters: convolutional filters in the first convolution
+    :param image_size: input image dimensions
+    :param l1: l1 regularization coefficient
+    :param l2: l2 regularization coefficient
+    :param activation: activation function
+    :param n_classes: number of channels in the output occlusion masks
+    :param depth: depth of the 'U'
+    :return: a keras model
+    """
     inputs = Input(image_size)
 
     conv_params = {
@@ -149,20 +174,23 @@ def transformer_unet(conv_filters,
                      image_size,
                      l1=None,
                      l2=None,
-                     activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
                      n_classes=10,
                      depth=3,
                      **kwargs):
-    inputs = Input(image_size)
+    """
+    LAX fully transformer U-net.  Higher spatial resolution layers use Focal Modulation blocks, lower resolutions
+    use Multi-headed self-attention
 
-    conv_params = {
-        'use_bias': False,
-        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
-        'bias_initializer': 'zeros',
-        'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
-        'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
-        'padding': 'same'
-    }
+    :param conv_filters: convolutional filters in the first focal modulation block
+    :param image_size: input image dimensions
+    :param l1: l1 regularization coefficient
+    :param l2: l2 regularization coefficient
+    :param n_classes: number of channels in the output occlusion masks
+    :param depth: depth of the 'U'
+    :return: a keras model
+    """
+
+    inputs = Input(image_size)
 
     x = inputs
 
@@ -279,10 +307,22 @@ def vit_unet(conv_filters,
              image_size,
              l1=None,
              l2=None,
-             activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
              n_classes=10,
              depth=3,
              **kwargs):
+    """
+    LAX transformer U-net.  Higher spatial resolution layers use convolution blocks, lower resolutions
+    use Multi-headed self-attention
+
+    :param conv_filters: convolutional filters in the first convolution block
+    :param image_size: input image dimensions
+    :param l1: l1 regularization coefficient
+    :param l2: l2 regularization coefficient
+    :param n_classes: number of channels in the output occlusion masks
+    :param depth: depth of the 'U'
+    :return: a keras model
+    """
+
     inputs = Input(image_size)
 
     conv_params = {
@@ -407,10 +447,10 @@ def lunchbox_packer(conv_filters,
 
 
 def lunchbox_packerv2(conv_filters,
-                    image_size,
-                    depth=3,
-                    learning_rate=1e-3,
-                    **kwargs):
+                      image_size,
+                      depth=3,
+                      learning_rate=1e-3,
+                      **kwargs):
     inputs = Input(image_size)
 
     x = inputs
