@@ -332,6 +332,7 @@ def build_conv_LAXNet(conv_filters,
     """
     # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
+
     def mask_plurality(image_size, cam_size, pred_size):
         image_inputs = Input(image_size)
         cam_inputs = Input(cam_size)

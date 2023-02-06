@@ -16,7 +16,7 @@ import tensorflow as tf
 import numpy as np
 
 import pynvml
-
+from optimization.schedules import bleed_out
 
 class Config:
     """
@@ -470,16 +470,17 @@ class Experiment:
         train_dset, val_dset, test_dset = dset_dict['train'], dset_dict['val'], dset_dict['test']
 
         def postprocess_dset(ds):
-            ds = ds.repeat()
-
-            if self.dataset_params['batch'] > 1:
-                ds = ds.batch(self.dataset_params['batch'])
 
             if self.dataset_params['cache']:
                 if self.dataset_params['cache_to_lscratch']:
                     ds = ds.cache(self.run_args.lscratch)
                 else:
                     ds = ds.cache()
+
+            ds = ds.repeat()
+
+            if self.dataset_params['batch'] > 1:
+                ds = ds.batch(self.dataset_params['batch'])
 
             if self.dataset_params['shuffle']:
                 ds = ds.shuffle(self.dataset_params['shuffle'], self.params['seed'], True)
