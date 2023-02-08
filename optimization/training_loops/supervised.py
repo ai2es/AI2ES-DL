@@ -22,6 +22,23 @@ def wandb_supervised(model,
                      dataset_params=None,
                      optimization_params=None,
                      **kwargs):
+    """
+    Supervised training loop with weights and biases support
+
+    :param model: keras model
+    :param train_dset: tf.data.Dataset for training
+    :param val_dset: tf.data.Dataset for evaluation
+    :param network_params: see Config.network_params
+    :param experiment_params: see Config.experiment_params
+    :param callbacks: Callbacks for keras fit training
+    :param evaluate_on: a dictionary of finite objects passable to model.evaluate
+    :param train_steps: number of steps per epoch
+    :param val_steps: number of validations steps per epoch
+    :param hardware_params: see Config.hardware_params
+    :param dataset_params: see Config.dataset_params
+    :param optimization_params: see Config.optimization_params
+    :return: a ModelData instance
+    """
     run = wandb.init(project="test-project", entity="ai2es",
                      config={
                          'experiment': experiment_params,

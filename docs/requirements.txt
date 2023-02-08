@@ -12,3 +12,4 @@ tensorflow
 tensorflow_datasets
 python-docs-theme
 renku-sphinx-theme
+wandb
