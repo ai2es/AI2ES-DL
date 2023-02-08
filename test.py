@@ -3,6 +3,7 @@ import tensorflow as tf
 from support.util import Config, Experiment
 
 from trainable.models.vit import build_focal_LAXNet
+from trainable.models.cnn import build_basic_cnn
 
 from data.datasets.image_classification import cats_dogs
 from optimization.data_augmentation.ssda import custom_rand_augment_dset
@@ -10,8 +11,9 @@ from optimization.data_augmentation.ssda import custom_rand_augment_dset
 from tensorflow.keras.callbacks import LearningRateScheduler
 from optimization.callbacks import EarlyStoppingDifference
 
-from optimization.training_loops.supervised import keras_supervised
-from optimization.schedules import bleed_out
+from optimization.training_loops.supervised import keras_supervised, wandb_supervised
+from optimization.schedules import BleedOut
+
 """
 hardware_params must include:
 
@@ -51,10 +53,10 @@ network_params must include:
 image_size = (128, 128, 3)
 
 network_params = {
-    'network_fn': build_focal_LAXNet,
+    'network_fn': build_basic_cnn,
     'network_args': {
         'n_classes': 2,
-        'conv_filters': 24,
+        'conv_filters': '[24, 32, 48, 64]',
         'conv_size': '[3]',
         'dense_layers': '[16]',
         'learning_rate': 5e-4,
@@ -84,11 +86,13 @@ experiment_params must include:
 
 experiment_params = {
     'seed': 42,
-    'steps_per_epoch': 512,
-    'patience': 32,
+    'steps_per_epoch': 128,
+    'patience': 2,
     'min_delta': 0.0,
-    'epochs': 512,
+    'epochs': 100,
     'nogo': False,
+    'train_metrics': [tf.keras.metrics.CategoricalAccuracy()],
+    'val_metrics': [tf.keras.metrics.CategoricalAccuracy()]
 }
 """
 dataset_params must include:
@@ -108,7 +112,7 @@ dataset_params = {
     },
     'cache': False,
     'cache_to_lscratch': False,
-    'batch': 97,
+    'batch': 32,
     'prefetch': 8,
     'shuffle': True,
     'augs': []
@@ -132,12 +136,12 @@ optimization_params = {
                                          patience=experiment_params['patience'],
                                          restore_best_weights=True,
                                          min_delta=experiment_params['min_delta'],
-                                         monitor='val_clam_categorical_accuracy'
+                                         monitor='val_categorical_accuracy',
                                         ),
-        LearningRateScheduler(bleed_out(network_params['network_args']['learning_rate'])),
+        LearningRateScheduler(BleedOut(network_params['network_args']['learning_rate'])),
         # LossWeightScheduler(loss_weight_schedule)
     ],
-    'training_loop': keras_supervised
+    'training_loop': wandb_supervised
 }
 
 config = Config(hardware_params, network_params, dataset_params, experiment_params, optimization_params)
@@ -148,6 +152,6 @@ if __name__ == "__main__":
     exp = Experiment(config)
 
     # print(exp.params)
-    # exp.run_array(0)
+    exp.run_array(0)
 
-    exp.enqueue()
+    #exp.enqueue()

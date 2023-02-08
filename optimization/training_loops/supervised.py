@@ -4,6 +4,155 @@ Supervised training loops
 
 from time import time
 from support.data_structures import ModelData
+import tensorflow as tf
+import numpy as np
+import wandb
+
+
+def wandb_supervised(model,
+                     train_dset,
+                     val_dset,
+                     network_params,
+                     experiment_params,
+                     callbacks,
+                     evaluate_on=None,
+                     train_steps=None,
+                     val_steps=None,
+                     hardware_params=None,
+                     dataset_params=None,
+                     optimization_params=None,
+                     **kwargs):
+    run = wandb.init(project="test-project", entity="ai2es",
+                     config={
+                         'experiment': experiment_params,
+                         'hardware': hardware_params,
+                         'dataset': dataset_params,
+                         'network': network_params,
+                         'optimization': optimization_params
+                     })
+
+    optimizer = model.optimizer
+    loss_fn = model.loss
+
+    def train_step(x, y, metrics):
+        with tf.GradientTape() as tape:
+            logits = model(x, training=True)
+            loss_value = loss_fn(y, logits)
+
+        grads = tape.gradient(loss_value, model.trainable_weights)
+        optimizer.apply_gradients(zip(grads, model.trainable_weights))
+
+        for train_metric in metrics:
+            train_metric.update_state(y, logits)
+
+        return loss_value
+
+    def test_step(x, y, metrics):
+        val_logits = model(x, training=False)
+        loss_value = loss_fn(y, val_logits)
+
+        for val_metric in metrics:
+            val_metric.update_state(y, val_logits)
+
+        return loss_value
+
+    def train(train_dataset, val_dataset, train_metrics, val_metrics,
+              epochs=10, train_steps=200, val_steps=50, callbacks=None):
+
+        _callbacks = callbacks if callbacks else []
+        callbacks = tf.keras.callbacks.CallbackList(
+            _callbacks, add_history=True, model=model)
+
+        early_stop_config = {'cb': None, 'stop_early': False}
+        # check for an early stopping callback
+        for callback in callbacks:
+            if isinstance(callback, tf.keras.callbacks.EarlyStopping):
+                early_stop_config['stop_early'] = True
+                early_stop_config['cb'] = callback
+
+        logs = {}
+        callbacks.on_train_begin(logs=logs)
+        for epoch in range(epochs):
+            callbacks.on_epoch_begin(epoch, logs=logs)
+            print("\nStart of epoch %d" % (epoch,))
+
+            train_loss = []
+            val_loss = []
+
+            # Iterate over the batches of the dataset
+            for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
+                callbacks.on_batch_begin((x_batch_train, y_batch_train), logs=logs)
+                callbacks.on_train_batch_begin((x_batch_train, y_batch_train), logs=logs)
+
+                loss_value = train_step(x_batch_train, y_batch_train, train_metrics)
+                train_loss.append(float(loss_value))
+
+                logs = {'epochs': epoch,
+                        'loss': np.mean(train_loss),
+                        **{metric.name: float(metric.result().numpy()) for metric in train_metrics}}
+
+                callbacks.on_train_batch_end((x_batch_train, y_batch_train), logs=logs)
+                callbacks.on_batch_end((x_batch_train, y_batch_train), logs=logs)
+                if step >= train_steps:
+                    break
+
+            # Run a validation loop at the end of each epoch
+            for step, (x_batch_val, y_batch_val) in enumerate(val_dataset):
+                callbacks.on_batch_begin((x_batch_val, y_batch_val), logs=logs)
+                callbacks.on_test_batch_begin((x_batch_val, y_batch_val), logs=logs)
+
+                val_loss_value = test_step(x_batch_val,
+                                           y_batch_val,
+                                           val_metrics)
+                val_loss.append(float(val_loss_value))
+
+                logs = {'epochs': epoch,
+                        'val_loss': np.mean(val_loss),
+                        **{f'val_{metric.name}': float(metric.result().numpy()) for metric in val_metrics}}
+
+                callbacks.on_test_batch_end((x_batch_val, y_batch_val), logs=logs)
+                callbacks.on_batch_end((x_batch_val, y_batch_val), logs=logs)
+
+                if val_steps:
+                    if step >= val_steps:
+                        break
+
+            logs = {'epochs': epoch,
+                    'loss': np.mean(train_loss),
+                    **{metric.name: float(metric.result().numpy()) for metric in train_metrics},
+                    'val_loss': np.mean(val_loss),
+                    **{f'val_{metric.name}': float(metric.result().numpy()) for metric in val_metrics}}
+            print(logs)
+            callbacks.on_epoch_end(epoch, logs=logs)
+
+            # ⭐: log metrics using wandb.log
+            wandb.log({'epochs': epoch,
+                       'loss': np.mean(train_loss),
+                       **{metric.name: float(metric.result().numpy()) for metric in train_metrics},
+                       'val_loss': np.mean(val_loss),
+                       **{f'val_{metric.name}': float(metric.result().numpy()) for metric in val_metrics}})
+
+            # check for early stopping
+            if early_stop_config['stop_early']:
+                if early_stop_config['cb'].wait >= early_stop_config['cb'].patience and epoch > 0:
+                    print('stopping early.')
+                    break
+            # Reset metrics at the end of each epoch
+            for train_metric in train_metrics:
+                train_metric.reset_states()
+            for val_metric in val_metrics:
+                val_metric.reset_states()
+
+    train(train_dset,
+          val_dset,
+          experiment_params['train_metrics'],
+          experiment_params['val_metrics'],
+          epochs=experiment_params['epochs'],
+          train_steps=train_steps,
+          val_steps=val_steps,
+          callbacks=callbacks)
+
+    run.finish()
 
 
 def keras_supervised(model,
@@ -14,7 +163,8 @@ def keras_supervised(model,
                      callbacks,
                      evaluate_on=None,
                      train_steps=None,
-                     val_steps=None
+                     val_steps=None,
+                     **kwargs
                      ):
     """
     train a keras model on a dataset and evaluate it on other datasets then return the ModelData instance

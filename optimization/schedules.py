@@ -4,51 +4,41 @@ functions take take values on the interval from [0-1] and convert them to real v
 """
 
 import tensorflow as tf
+from math import sin, pi
 
 
-def bleed_out(lrate=1e-3):
-    """
-    Bleed out learning rate schedule creator.
+class BleedOut:
+    # Oscillating learning rate schedule
+    # inspired by https://arxiv.org/abs/1506.01186
+    def __init__(self, lrate, minimum=1e-3):
+        self.lrate = lrate
+        self.minimum = minimum
 
-    :param lrate: starting learning rate
-    :return: bleed out schedule function starting at lrate
-    """
-    def schedule(index, lrate=1e-3, minimum=1e-3):
-        """Bleed Out Learning Rate Scheduler.
-        :param epoch: integer with current epoch count.
-        :return: float with desired learning rate.
-
-        Oscillating learning rate schedule
-        inspired by https://arxiv.org/abs/1506.01186
-        """
-        from math import sin, pi
+    def __call__(self, index):
         x = index + 1
-        frac = (1 - minimum) / x ** (1 - sin(2 * pi * (x ** .5)))
-        return min(lrate * (frac + minimum), 1)
-
-    return schedule
+        frac = (1 - self.minimum) / x ** (1 - sin(2 * pi * (x ** .5)))
+        return min(self.lrate * (frac + self.minimum), 1)
 
 
-def cyclical_adv_lrscheduler25(lrate=1e-3):
+class Cyclic25:
+    """CAI Cyclical and Advanced Learning Rate Scheduler.
+    # Arguments
+     	index: integer with current epoch count.
+    # Returns
+        float with desired learning rate.
     """
-    CAI Cyclical and Advanced Learning Rate Scheduler.
 
-    :param lrate: starting learning rate
-    :return: cyclic schedule function starting at lrate, repeats every 25 epochs
-    """
-    def schedule(epoch):
-        """CAI Cyclical and Advanced Learning Rate Scheduler.
-        :param epoch: integer with current epoch count.
-        :return: float with desired learning rate.
-        """
-        base_learning = lrate
+    def __init__(self, lrate):
+        self.lrate = lrate
+
+    def __call__(self, index):
+        epoch = index + 1
+        base_learning = self.lrate
         local_epoch = epoch % 25
         if local_epoch < 7:
             return base_learning * (1 + 0.5 * local_epoch)
         else:
             return (base_learning * 4) * (0.85 ** (local_epoch - 7))
-
-    return schedule
 
 
 def diffusion_schedule(diffusion_times, min_signal_rate=0.02, max_signal_rate=0.95):

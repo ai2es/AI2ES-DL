@@ -2,7 +2,6 @@
 Utility functions for model training and result storage
 """
 
-
 import os
 import pickle
 from itertools import product
@@ -16,7 +15,7 @@ import tensorflow as tf
 import numpy as np
 
 import pynvml
-from optimization.schedules import bleed_out
+
 
 class Config:
     """
@@ -108,20 +107,22 @@ class Results:
 
     def __init__(self, experiment, model_data):
         self.config = Config(
-                             experiment.hardware_params,
-                             experiment.network_params,
-                             experiment.dataset_params,
-                             experiment.params,
-                             experiment.optimization_params
-                             )
+            experiment.hardware_params,
+            experiment.network_params,
+            experiment.dataset_params,
+            experiment.params,
+            experiment.optimization_params
+        )
         self.experiment = experiment
         self.model_data = model_data
 
-        self.config.optimization_params['callbacks'] = [str(callback) for callback in self.config.optimization_params['callbacks']]
-        self.experiment.optimization_params['callbacks'] = [str(callback) for callback in self.experiment.optimization_params['callbacks']]
+        self.config.optimization_params['callbacks'] = [str(callback) for callback in
+                                                        self.config.optimization_params['callbacks']]
+        self.experiment.optimization_params['callbacks'] = [str(callback) for callback in
+                                                            self.experiment.optimization_params['callbacks']]
 
-        if self.config.optimization_params['callbacks'] or self.experiment.optimization_params['callbacks']:
-            print("Note that callbacks cannot be serialized, so string representations will be serialized instead")
+        # if self.config.optimization_params['callbacks'] or self.experiment.optimization_params['callbacks']:
+        #    print("Note that callbacks cannot be serialized, so string representations will be serialized instead")
 
     def summary(self):
         """summarize the model training run"""
@@ -270,6 +271,7 @@ class JobIterator():
     JobIterator object used to define the order of an array of experiments. By Andrew H. Fagg,
     modified by Jay Rothenberger
     """
+
     def __init__(self, params):
         """
         Constructor
@@ -509,7 +511,10 @@ class Experiment:
         model_data = self.optimization_params['training_loop'](model, train_dset, val_dset, self.network_params,
                                                                self.params,
                                                                self.optimization_params['callbacks'],
-                                                               train_steps=self.params['steps_per_epoch'])
+                                                               train_steps=self.params['steps_per_epoch'],
+                                                               hardware_params=self.hardware_params,
+                                                               dataset_params=self.dataset_params,
+                                                               optimization_params=self.optimization_params)
 
         result = Results(self, model_data)
         with open(f'{os.curdir}/../{self.hardware_params["results_dir"]}/{generate_fname(self.params)}', 'wb') as fp:

@@ -134,13 +134,12 @@ def build_MobileNetV3Small(**kwargs):
 
 
 def build_basic_cnn(conv_filters,
-                    conv_size,
                     dense_layers,
                     learning_rate,
                     image_size,
-                    loss='categorical_crossentropy',
+                    loss=tf.keras.losses.CategoricalCrossentropy(),
                     l1=None, l2=None,
-                    activation=lambda x: x * tf.nn.relu6(x + 3) / 6,
+                    activation=tf.nn.relu,
                     n_classes=10,
                     **kwargs):
     """
@@ -148,8 +147,6 @@ def build_basic_cnn(conv_filters,
 
     :param conv_filters: string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the number
                          of convolutional filters in each layer
-    :param conv_size: string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the size
-                         of convolutional kernels in each layer.  Must have same length as the previous "list"
     :param dense_layers:string of the form '[<int>, <int>, <int>]' where can be cast to in from substring, the size
                          of dense layers (number of units in each layer) for each dense layer.
     :param learning_rate: learning rate
@@ -161,18 +158,20 @@ def build_basic_cnn(conv_filters,
     :param n_classes: number of output classes
     :return: a compiled keras model
     """
+
+    initializer = tf.keras.initializers.LecunNormal(seed=42)
+
     if isinstance(conv_filters, str):
         conv_filters = [int(i) for i in conv_filters.strip('[]').split(', ')]
-    if isinstance(conv_size, str):
-        conv_size = [int(i) for i in conv_size.strip('[]').split(', ')]
     if isinstance(dense_layers, str):
-        dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
+        if dense_layers.strip('[]'):
+            dense_layers = [int(i) for i in dense_layers.strip('[]').split(', ')]
 
     inputs = Input(image_size)
 
     conv_params = {
         'use_bias': False,
-        'kernel_initializer': tf.keras.initializers.GlorotUniform(),
+        'kernel_initializer': initializer,
         'bias_initializer': 'zeros',
         'kernel_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
         'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
@@ -183,13 +182,11 @@ def build_basic_cnn(conv_filters,
 
     for block in range(len(conv_filters)):
         def basic_cnn_block(z):
-            inp = z
             z = Conv2D(conv_filters[block], kernel_size=3, activation=None, **conv_params)(z)
             z = Conv2D(conv_filters[block] * 2, kernel_size=5, activation=None, **conv_params)(z)
             z = BatchNormalization()(z)
             z = activation(z)
             z = MaxPooling2D(2, 2)(z)
-            z = Concatenate()([z, MaxPooling2D(2, 2)(inp)])
             return z
 
         x = basic_cnn_block(x)
@@ -198,10 +195,11 @@ def build_basic_cnn(conv_filters,
     # semantic segmentation output with extra (irrelevant) channel
     x = GlobalMaxPooling2D()(x)
 
-    for units in dense_layers:
-        x = Dense(units, activation=activation, use_bias=False)(x)
+    if dense_layers:
+        for units in dense_layers:
+            x = Dense(units, activation=activation, use_bias=False, kernel_initializer=initializer)(x)
 
-    outputs = Dense(n_classes, activation='softmax', use_bias=False)(x)
+    outputs = Dense(n_classes, activation='softmax', use_bias=False, kernel_initializer=initializer)(x)
 
     accuracy = 'sparse_categorical_accuracy' if loss == 'sparse_categorical_crossentropy' else 'categorical_accuracy'
 
@@ -212,7 +210,7 @@ def build_basic_cnn(conv_filters,
     opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
 
     model = tf.keras.Model(inputs=[inputs], outputs=[outputs],
-                           name=f'thrifty_model_{"%02d" % time()}')
+                           name=f'cnn_{"%02d" % time()}')
 
     model.compile(loss=loss,
                   optimizer=opt,
@@ -247,7 +245,6 @@ def build_basic_convnextv2(conv_filters,
     :param n_classes: number of output classes
     :return: a compiled keras model
     """
-
 
     conv_params = {
         'use_bias': False,
