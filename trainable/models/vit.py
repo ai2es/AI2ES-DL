@@ -5,13 +5,14 @@ and must return only a compiled keras model
 """
 import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout, \
-    BatchNormalization, GlobalMaxPooling2D, Multiply, LayerNormalization, MultiHeadAttention, Reshape, Add
+    BatchNormalization, GlobalMaxPooling2D, Multiply, LayerNormalization, MultiHeadAttention, Reshape, Add, Lambda
+import tensorflow.keras.backend as K
 
-from trainable.custom_layers import TFPositionalEncoding2D, focal_module, GlobalResponseNormalization
+from trainable.custom_layers import TFPositionalEncoding2D, focal_module, GlobalResponseNormalization, IterativeMean
 from trainable.custom_layers import VLunchboxMHSA as LunchboxMHSA
 from trainable.losses import identity, logsum, CE, NCE
 
-from trainable.models.ae import transformer_unet, vit_unet
+from trainable.models.ae import transformer_unet, vit_unet, ConvNeXt_unet
 
 from time import time
 
@@ -146,7 +147,6 @@ def build_focal_modulator(image_size,
                           depth=3,
                           loss='categorical_crossentropy',
                           **kwargs):
-
     """
     simple image classification network built with focal modules
 
@@ -191,15 +191,15 @@ def build_focal_modulator(image_size,
 
 
 def build_focal_LAXNet(conv_filters,
-                      learning_rate,
-                      image_size,
-                      n_classes=10,
-                      alpha=1e-3,
-                      beta=1e-3,
-                      gamma=0.0,
-                      noise_level=0.05,
-                      depth=5,
-                      **kwargs):
+                       learning_rate,
+                       image_size,
+                       n_classes=10,
+                       alpha=1e-3,
+                       beta=1e-3,
+                       gamma=0.0,
+                       noise_level=0.05,
+                       depth=5,
+                       **kwargs):
     """
     LAX image classification network built with focal modules
 
@@ -305,16 +305,248 @@ def build_focal_LAXNet(conv_filters,
     return model
 
 
+def build_focal_LAXNet_iterative_mean(conv_filters,
+                                      learning_rate,
+                                      image_size,
+                                      n_classes=10,
+                                      alpha=1e-3,
+                                      beta=1e-3,
+                                      gamma=0.0,
+                                      noise_level=0.05,
+                                      depth=5,
+                                      **kwargs):
+    """
+    LAX image classification network built with focal modules
+
+    :param conv_filters: Convolutional filters in the first convolutional block
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param alpha: Masking loss weight
+    :param beta: NCE loss weight
+    :param gamma: Penalty for masking a pixel loss weight
+    :param noise_level: standard deviation of noise to add to masked pixels
+    :param depth: depth of 'U' in the image-to-image model
+    :return: a compiled keras model
+
+    """
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    mean = IterativeMean()(model_inputs)
+
+    base = transformer_unet(conv_filters, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+    masked_all = mask_total(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out, mean])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out, mean])
+
+    # masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    # masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    masked_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {'crossentropy': base_out, 'cosine': masked_pred_out, 'all_masked': masked_all_out,
+               'idk': tf.reduce_sum(tf.reduce_mean(cam, axis=(1, 2))[:, :-1], -1, keepdims=True)}
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, logsum, NCE, identity],
+                  loss_weights=[1, alpha, beta, gamma],
+                  optimizer=opt,
+                  metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model
+
+
+def build_focal_LAXNet_iterative_mean_bin_mask(conv_filters,
+                                               learning_rate,
+                                               image_size,
+                                               n_classes=10,
+                                               alpha=1e-3,
+                                               beta=1e-3,
+                                               gamma=0.0,
+                                               noise_level=0.05,
+                                               depth=5,
+                                               **kwargs):
+    """
+    LAX image classification network built with focal modules
+
+    :param conv_filters: Convolutional filters in the first convolutional block
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param alpha: Masking loss weight
+    :param beta: NCE loss weight
+    :param gamma: Penalty for masking a pixel loss weight
+    :param noise_level: standard deviation of noise to add to masked pixels
+    :param depth: depth of 'U' in the image-to-image model
+    :return: a compiled keras model
+
+    """
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant
+        m = tf.where(m >= .5, tf.ones_like(m), tf.zeros_like(m))
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        m = tf.where(m >= .5, tf.ones_like(m), tf.zeros_like(m))
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    mean = IterativeMean()(model_inputs)
+
+    base = transformer_unet(conv_filters, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+    masked_all = mask_total(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out, mean])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out, mean])
+
+    # masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    # masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    masked_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {'crossentropy': base_out, 'cosine': masked_pred_out, 'all_masked': masked_all_out,
+               'idk': tf.reduce_sum(tf.reduce_mean(cam, axis=(1, 2))[:, :-1], -1, keepdims=True)}
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, logsum, NCE, identity],
+                  loss_weights=[1, alpha, beta, gamma],
+                  optimizer=opt,
+                  metrics={'crossentropy': ['categorical_accuracy'], 'all_masked': ['categorical_accuracy']})
+
+    return model
+
+
 def build_conv_LAXNet(conv_filters,
-                       learning_rate,
-                       image_size,
-                       n_classes=10,
-                       alpha=1e-3,
-                       beta=1e-3,
-                       gamma=1e-4,
-                       noise_level=0.05,
-                       depth=5,
-                       **kwargs):
+                      learning_rate,
+                      image_size,
+                      n_classes=10,
+                      alpha=1e-3,
+                      beta=1e-3,
+                      gamma=1e-4,
+                      noise_level=0.05,
+                      depth=5,
+                      **kwargs):
     """
     LAX image classification network built with convolution and attention modules
 
@@ -330,8 +562,8 @@ def build_conv_LAXNet(conv_filters,
     :return: a compiled keras model
 
     """
-    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
 
     def mask_plurality(image_size, cam_size, pred_size):
         image_inputs = Input(image_size)
@@ -482,5 +714,130 @@ def build_basic_lunchbox(conv_filters,
     model.compile(loss=loss,
                   optimizer=opt,
                   metrics=[accuracy])
+
+    return model
+
+
+def build_LAXNeXt_iterative_mean(conv_filters,
+                                 learning_rate,
+                                 image_size,
+                                 n_classes=10,
+                                 alpha=1e-3,
+                                 beta=1e-3,
+                                 gamma=0.0,
+                                 noise_level=0.05,
+                                 depth=5,
+                                 **kwargs):
+    """
+    LAX image classification network built with convnext blocks
+
+    :param conv_filters: Convolutional filters in the first convolutional block
+    :param learning_rate: learning rate
+    :param image_size: input image dimensions
+    :param n_classes: number of output classes
+    :param alpha: Masking loss weight
+    :param beta: NCE loss weight
+    :param gamma: Penalty for masking a pixel loss weight
+    :param noise_level: standard deviation of noise to add to masked pixels
+    :param depth: depth of 'U' in the image-to-image model
+    :return: a compiled keras model
+
+    """
+
+    # in the masker we replace the masked pixels with the mean of the input tensor plus some noise
+
+    def mask_plurality(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        i = tf.argmax(pred_inputs[:, :-1], axis=-1)
+        print(cam_inputs.shape)
+        m = tf.gather(cam_inputs, i, axis=-1, batch_dims=1)
+        # m = tf.slice(layer.output, i, axis=-1)
+        m = tf.expand_dims(m, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'plurality_masker')
+
+        return model
+
+    def mask_total(cam_size, pred_size, mean_size):
+        image_inputs = Input(image_size)
+        cam_inputs = Input(cam_size)
+        pred_inputs = Input(pred_size)
+        mean = Input(mean_size)
+
+        m = tf.reduce_sum(cam_inputs[:, :, :, :-1], keepdims=True, axis=-1)
+
+        # mask out the class relevant pixels
+        z = image_inputs * (tf.ones_like(m) - m)
+        # replace with noise that preserves the mean
+
+        masker_outputs = z + (m * (mean + tf.random.normal(tf.shape(mean), stddev=noise_level)))
+
+        model = tf.keras.Model(inputs=[image_inputs, cam_inputs, pred_inputs, mean], outputs=[masker_outputs],
+                               name=f'all_masker')
+
+        return model
+
+    model_inputs = Input(image_size)
+
+    mean = IterativeMean()(model_inputs)
+
+    base = ConvNeXt_unet(conv_filters, image_size, n_classes=n_classes, depth=depth)
+
+    masked_pred = mask_plurality(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+    masked_all = mask_total(base.outputs[-1].shape[1:], base.outputs[0].shape[1:], image_size)
+
+    base_out, idk, cam = base(model_inputs)
+
+    masked_inputs_pred = masked_pred([model_inputs, cam, base_out, mean])
+    masked_inputs_all = masked_all([model_inputs, cam, base_out, mean])
+
+    # masked_inputs_pred = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_pred)
+    # masked_inputs_all = Lambda(lambda z: K.stop_gradient(z))(masked_inputs_all)
+
+    masked_pred_out, _, _ = base(masked_inputs_pred)
+    masked_all_out, _, _ = base(masked_inputs_all)
+
+    normed_base_out, _ = tf.linalg.normalize(base_out, axis=-1)
+    normed_masked_pred_out, _ = tf.linalg.normalize(masked_pred_out, axis=-1)
+
+    p2_pred_out = normed_base_out * normed_masked_pred_out
+
+    outputs = {
+        'crossentropy': base_out,
+        'cosine': p2_pred_out,
+        'all_masked': masked_all_out,
+        'idk': tf.reduce_sum(tf.reduce_mean(cam, axis=(1, 2))[:, :-1], -1, keepdims=True),
+        'orthogonal': masked_pred_out
+    }
+
+    model = tf.keras.Model(inputs=[model_inputs], outputs=outputs,
+                           name=f'clam_masker')
+
+    opt = tf.keras.optimizers.Nadam(learning_rate=learning_rate,
+                                    beta_1=0.9, beta_2=0.999,
+                                    epsilon=None, decay=0.99)
+
+    opt = tf.keras.mixed_precision.LossScaleOptimizer(opt)
+
+    model.compile(loss=[CE, logsum, NCE, identity, identity],
+                  loss_weights=[1, alpha, beta, gamma, 0],
+                  optimizer=opt,
+                  metrics={
+                      'crossentropy': ['categorical_accuracy'],
+                      'all_masked': ['categorical_accuracy'],
+                      'orthogonal': ['categorical_accuracy']
+                  }
+                  )
 
     return model

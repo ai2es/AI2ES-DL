@@ -66,8 +66,6 @@ def min_max_normalize_image(image):
     :param image: any image format
     :return: normalized image
     """
-    image = tf.reduce_sum(image, -1)
-
     image -= tf.reduce_min(image)
     image /= tf.reduce_max(image)
 
@@ -86,27 +84,72 @@ def explain_image_classifier_with_saliency(model, instance):
     instance = tf.cast(instance, tf.double)
 
     result = model.predict(instance)
-    max_idx = tf.argmax(result, 1)
+    max_idx = tf.argmax(result['crossentropy'], 1)
 
     with tf.GradientTape() as tape:
         tape.watch(instance)
         result = model(instance)
-        max_score = result[0, max_idx[0]]
+        print(result, max_idx)
+        max_score = result['crossentropy'][0, max_idx[0]]
 
     grads = tape.gradient(max_score, instance)
 
     pos = tf.nn.relu(grads[0])
     neg = tf.nn.relu(tf.zeros_like(grads[0]) - grads[0])
 
-    pos = min_max_normalize_image(pos)
-    neg = min_max_normalize_image(neg)
+    pos = min_max_normalize_image(tf.reduce_max(pos, -1))
+    neg = min_max_normalize_image(tf.reduce_max(neg, -1))
 
-    plt.imshow(pos, 'ocean')
+    plt.imshow(pos, 'viridis')
     plt.show()
-    plt.imshow(neg, 'ocean')
+    plt.imshow(neg, 'viridis')
+    plt.show()
+    print(pos.shape, instance[0].shape)
+    plt.imshow(min_max_normalize_image(tf.expand_dims(pos, -1) + instance[0]))
     plt.show()
 
     return pos, neg
+
+
+def explain_image_classifier_with_occlusion(model, instance, patch_size=8):
+    """
+    plt.show a visual explanation using saliency for an image classification keras Model and a image instance with
+    matplotlib
+
+    :param model: keras model to explain
+    :param instance: model input image
+    :param patch_size: size of gray patch to apply to measure occlusion
+    """
+    # code adapted from https://gist.github.com/RaphaelMeudec/7985b0c5eb720a29021d52b0a0be549a
+    # Create function to apply a grey patch on an image
+    def apply_grey_patch(image, top_left_x, top_left_y, patch_size):
+        patched_image = np.array(image, copy=True)
+        patched_image[top_left_y:top_left_y + patch_size, top_left_x:top_left_x + patch_size, :] = tf.reduce_mean(image)
+
+        return patched_image
+
+    img = instance[0]
+
+    sensitivity_map = np.zeros((img.shape[0], img.shape[1]), dtype=float)
+
+    # Iterate the patch over the image
+    for top_left_x in range(0, img.shape[0], patch_size // 2):
+        for top_left_y in range(0, img.shape[1], patch_size // 2):
+            patched_image = apply_grey_patch(img, top_left_x, top_left_y, patch_size)
+            predicted_classes = model.predict(np.array([patched_image]), verbose=0)['crossentropy'][0]
+            confidence = predicted_classes[tf.argmax(predicted_classes)]
+
+            # Save confidence for this specific patched image in map
+            sensitivity_map[
+            top_left_y:top_left_y + patch_size,
+            top_left_x:top_left_x + patch_size,
+            ] = confidence
+
+    plt.imshow(min_max_normalize_image(sensitivity_map), 'viridis')
+    plt.show()
+    plt.imshow(min_max_normalize_image(
+        tf.cast(tf.expand_dims(min_max_normalize_image(sensitivity_map), -1), tf.float32) + tf.cast(img, tf.float32)))
+    plt.show()
 
 
 def labeled_multi_image(rows, n_cols, row_labs=None, col_labs=None, colors=None, class_names=None):
@@ -349,7 +392,7 @@ def masking_evaluation(model, dset, class_names, n=1):
             output, probs = get_mask(model, x)
             probs = tf.squeeze(probs, 0)
             # collecting only the elements with the correct true class
-            there = tf.squeeze(tf.where(prob[:, cl_idx] > .75))
+            there = tf.squeeze(tf.where(prob[:, cl_idx] > .1))
             masked_all = tf.gather(masked_all, there)
             prob = tf.gather(prob, there)
             x = tf.gather(x, there)

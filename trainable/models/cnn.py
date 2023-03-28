@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input, Concatenate, Dropout, \
     BatchNormalization, GlobalMaxPooling2D
 
-from tensorflow.keras.applications import EfficientNetB0, ResNet50V2, VGG16, MobileNetV3Small
+from tensorflow.keras.applications import EfficientNetB0, ResNet50V2, VGG16, MobileNetV3Small, DenseNet121
 from time import time
 
 from trainable.models.ae import transformer_unet, vit_unet
@@ -30,11 +30,11 @@ def build_keras_application(application, image_size=(256, 256, 3), learning_rate
     inputs = Input(image_size)
 
     try:
-        model = application(input_tensor=inputs, include_top=False, weights='imagenet', pooling='avg',
+        model = application(input_tensor=inputs, include_top=False, weights=None, pooling='max',
                             include_preprocessing=False)
     except TypeError as t:
         # no preprocessing for ResNet
-        model = application(input_tensor=inputs, include_top=False, weights='imagenet', pooling='avg')
+        model = application(input_tensor=inputs, include_top=False, weights=None, pooling='max')
 
     outputs = Dense(n_classes, activation='softmax')(Dropout(dropout)(Flatten()(model.output)))
 
@@ -131,6 +131,21 @@ def build_MobileNetV3Small(**kwargs):
     :return: a compiled keras model
     """
     return build_keras_application(MobileNetV3Small, **kwargs)
+
+
+def build_DenseNet121(**kwargs):
+    """
+    Load the DenseNet121 keras application
+
+    :param application: keras application loading function
+    :param image_size: input image dimensions
+    :param learning_rate: learning rate for training
+    :param loss: loss function
+    :param n_classes: number of output classes
+    :param dropout: dropout rate
+    :return: a compiled keras model
+    """
+    return build_keras_application(DenseNet121, **kwargs)
 
 
 def build_basic_cnn(conv_filters,

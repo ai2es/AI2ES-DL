@@ -129,8 +129,12 @@ class Results:
         metrics = [key for key in self.model_data.history]
         patience = self.config.experiment_params['patience']
         epochs = len(self.model_data.history['loss'])
-        performance_at_patience = {key: self.model_data.history[key][epochs - patience - 1]
-                                   for key in metrics}
+        try:
+            performance_at_patience = {key: self.model_data.history[key][epochs - patience - 1]
+                                    for key in metrics}
+        except IndexError as e:
+            performance_at_patience = {key: self.model_data.history[key][-1]
+                                    for key in metrics}
 
         index = 'n/a' if self.experiment.index is None else self.experiment.index
         run_params = dict_to_string(dict(self.experiment.run_args)) if isinstance(self.experiment.run_args,
@@ -548,6 +552,7 @@ class Experiment:
 #SBATCH --array={self.hardware_params['array']}
 . /home/fagg/tf_setup.sh
 conda activate tf
+wandb login {self.params['api_key']}
 python run.py --pkl {exp_file} --lscratch $LSCRATCH --id $SLURM_ARRAY_TASK_ID"""
 
         with open('experiment.sh', 'w') as fp:

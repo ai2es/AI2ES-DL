@@ -5,6 +5,7 @@ import tensorflow as tf
 
 def CE(y_true, y_pred):
     """Cross-entropy for probability vector outputs"""
+    y_pred = tf.maximum(1e-16 * tf.ones_like(y_pred), y_pred)
     return tf.math.negative(tf.reduce_sum(tf.math.log(y_pred) * y_true, axis=-1))
 
 

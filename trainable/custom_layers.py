@@ -293,6 +293,8 @@ def ConvNeXt_block(filters, l1=None, l2=None):
             'padding': 'same'
         }
 
+        x = Conv2D(filters, 1, **conv_params)(x)
+
         inputs = x
 
         x = DepthwiseConv2D(7, **conv_params)(inputs)

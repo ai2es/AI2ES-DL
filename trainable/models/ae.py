@@ -494,3 +494,50 @@ def lunchbox_packerv2(conv_filters,
     model.compile(loss='mae',
                   optimizer=opt)
     return model
+
+
+def ConvNeXt_unet(conv_filters,
+                  image_size,
+                  l1=None,
+                  l2=None,
+                  n_classes=10,
+                  depth=3,
+                  **kwargs):
+
+    from trainable.custom_layers import ConvNeXt_block
+    inputs = Input(image_size)
+    x = inputs
+    skips = []
+    for i in range(depth):
+        x = ConvNeXt_block(conv_filters, l1, l2)(x)
+        skips.append(x)
+        x = MaxPooling2D(2)(x)
+        conv_filters *= 4 / 3
+        conv_filters = int(conv_filters)
+
+    x = ConvNeXt_block(conv_filters)(x)
+
+    for i in range(depth):
+        conv_filters *= 3 / 4
+        conv_filters = int(conv_filters + .5)
+
+        x = ConvNeXt_block(conv_filters, l1, l2)(x)
+        x = UpSampling2D(interpolation="bilinear")(x)
+        x = Add()([x, skips.pop(-1)])
+
+    # semantic segmentation output with extra (irrelevant) channel
+    cam = Dense(n_classes + 1, activation='softmax')(x)
+    # reduce sum over width / height
+    x = Lambda(lambda z: tf.reduce_mean(z, axis=(1, 2)))(cam)
+    # want to re-normalize without destroying the gradient
+    # ideally would just divide by sum
+    idk = x[:, -1]
+
+    x = x[:, :-1] + 2 ** (-16)  # * (inputs.shape[1] * inputs.shape[2])
+
+    out, _ = tf.linalg.normalize(x, 1, -1)
+
+    model = tf.keras.Model(inputs=[inputs], outputs=[out, idk, cam],
+                           name=f'clam')
+
+    return model

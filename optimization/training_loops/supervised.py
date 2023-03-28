@@ -55,8 +55,10 @@ def wandb_supervised(model,
         with tf.GradientTape() as tape:
             logits = model(x, training=True)
             loss_value = loss_fn(y, logits)
+            scaled_loss_value = optimizer.get_scaled_loss(loss_value)
 
-        grads = tape.gradient(loss_value, model.trainable_weights)
+        scaled_grads = tape.gradient(scaled_loss_value, model.trainable_weights)
+        grads = optimizer.get_unscaled_gradients(scaled_grads)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         for train_metric in metrics:
@@ -181,6 +183,9 @@ def keras_supervised(model,
                      evaluate_on=None,
                      train_steps=None,
                      val_steps=None,
+                     hardware_params=None,
+                     dataset_params=None,
+                     optimization_params=None,
                      **kwargs
                      ):
     """
@@ -195,9 +200,26 @@ def keras_supervised(model,
     :param evaluate_on: a dictionary of finite objects passable to model.evaluate
     :param train_steps: number of steps per epoch
     :param val_steps: number of validations steps per epoch
+    :param hardware_params: see Config.hardware_params
+    :param dataset_params: see Config.dataset_params
+    :param optimization_params: see Config.optimization_params
     :return: a ModelData instance
     """
     # Override arguments if we are using exp_index
+    wandb.init(project=experiment_params['project'], entity=experiment_params['entity'],
+               config={
+                   'experiment': experiment_params,
+                   'hardware': hardware_params,
+                   'dataset': dataset_params,
+                   'network': network_params,
+                   'optimization': optimization_params
+               })
+
+    callbacks.append(wandb.keras.WandbCallback(monitor='val_clam_categorical_accuracy',
+                                               save_weights_only=False,
+                                               log_weights=True,
+                                               save_model=False,
+                                               compute_flops=True))
 
     train_steps = train_steps if train_steps is not None else 100
 
