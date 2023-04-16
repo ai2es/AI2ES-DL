@@ -1,10 +1,3 @@
-"""
-Evaluations outside of just performance statistics for image classification models
-
-contains mostly XAI techniques for model explanation and helper methods.
-"""
-
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -18,17 +11,78 @@ from skimage.segmentation import mark_boundaries
 
 import tensorflow as tf
 
+def get_rf(model, instance, patch_size=8, stride=3, randrange=(-1, 1), layer=-4):
+    new_model = tf.keras.models.Model(inputs=model.inputs, outputs=model.layers[layer].output[0])
+    
+    # Create function to apply a random patch on an image tiled across the whole image to get the receptive field of a  
+    bottom, top = randrange
+    def apply_random_patch(image, top_left_x, top_left_y, patch_size):
+        patched_image = np.array(image, copy=True)
+        patched_image[top_left_y:top_left_y + patch_size, top_left_x:top_left_x + patch_size, :] = tf.random.uniform((patch_size, patch_size, image.shape[-1]), maxval=top, minval=bottom)
 
-def explain_image_classifier_with_lime(model, instance, n_classes):
+        return patched_image
+    
+    img = instance[0]
+    
+    sensitivity_map = np.zeros((img.shape[0], img.shape[1], new_model.output.shape[-1]), dtype=float)
+    original_features = new_model(instance)
+
+    # Iterate the patch over the image
+    for top_left_x in range(0, img.shape[0] - patch_size, stride):
+        for top_left_y in range(0, img.shape[1] - patch_size, stride):
+            patched_image = apply_random_patch(img, top_left_x, top_left_y, patch_size)
+            predicted_classes = new_model.predict(np.array([patched_image]), verbose=0)
+            # Save difference for this specific patched image in map
+            sensitivity_map[
+                top_left_y:top_left_y + patch_size,
+                top_left_x:top_left_x + patch_size,
+            ] = tf.reduce_sum(tf.abs(tf.subtract(original_features, predicted_classes)), axis=(1, 2))  # L1 difference
+            
+    return sensitivity_map
+
+
+def special_explain_image_classifier_with_lime(model, instance, n_classes):
     """
-    plt.show a visual explanation using LIME for an image classification keras Model and a image instance with matplotlib
-
-    :param model: keras model to explain
-    :param instance: model input image
-    :param n_classes: number of output classes
+    show a visual explanation using LIME for an image classification keras Model and a image instance with matplotlib
     """
     instance = np.array(instance)
     explainer = lime_image.LimeImageExplainer(kernel_width=.125)
+    
+    def special_predict(instance):
+        return model.predict(instance)['crossentropy']
+    
+    explanation = explainer.explain_instance(instance.astype(np.double), special_predict, top_labels=n_classes,
+                                             hide_color=0, num_samples=2048, batch_size=16)
+    temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=True, num_features=5,
+                                                hide_rest=True)
+    plt.imshow(mark_boundaries(temp / 2 + .5, mask))
+    plt.show()
+
+
+def special_explain_image_classifier_with_shap(model, instance, class_names):
+    instance = np.array(instance).astype(np.double)
+    print(instance.shape)
+    # define a masker that is used to mask out partitions of the input image, this one uses a blurred background
+    masker = shap.maskers.Image("blur(128,128)", instance[0].shape)
+    
+    def special_predict(instance):
+        return model.predict(instance)['crossentropy']
+    
+    # By default the Partition explainer is used for all  partition explainer
+    explainer = shap.Explainer(special_predict, masker, output_names=class_names)
+    # show the values contributing and detracting from each class prediction in order of their prediction probability
+    shap_values = explainer(np.expand_dims(instance[0], 0), max_evals=4096, batch_size=64,
+                            outputs=shap.Explanation.argsort.flip)
+    shap.image_plot(shap_values)
+    
+
+def explain_image_classifier_with_lime(model, instance, n_classes):
+    """
+    show a visual explanation using LIME for an image classification keras Model and a image instance with matplotlib
+    """
+    instance = np.array(instance)
+    explainer = lime_image.LimeImageExplainer(kernel_width=.125)
+    
     explanation = explainer.explain_instance(instance.astype(np.double), model.predict, top_labels=n_classes,
                                              hide_color=0, num_samples=2048, batch_size=16)
     temp, mask = explanation.get_image_and_mask(explanation.top_labels[0], positive_only=True, num_features=5,
@@ -38,18 +92,11 @@ def explain_image_classifier_with_lime(model, instance, n_classes):
 
 
 def explain_image_classifier_with_shap(model, instance, class_names):
-    """
-    plt.show a visual explanation using SHAP for an image classification keras Model and a image instance with matplotlib
-
-    :param model: keras model to explain
-    :param instance: model input image
-    :param class_names: names of output classes
-    """
     instance = np.array(instance).astype(np.double)
     print(instance.shape)
     # define a masker that is used to mask out partitions of the input image, this one uses a blurred background
     masker = shap.maskers.Image("blur(128,128)", instance[0].shape)
-
+    
     # By default the Partition explainer is used for all  partition explainer
     explainer = shap.Explainer(model.predict, masker, output_names=class_names)
     # show the values contributing and detracting from each class prediction in order of their prediction probability
@@ -59,27 +106,18 @@ def explain_image_classifier_with_shap(model, instance, class_names):
 
 
 def min_max_normalize_image(image):
-    """
-    helper function that transforms an image such that it takes up the entire brightness range.  Used to display
-    images that were centered for training.
+    # image = 
 
-    :param image: any image format
-    :return: normalized image
-    """
     image -= tf.reduce_min(image)
     image /= tf.reduce_max(image)
 
     return image
 
 
-def explain_image_classifier_with_saliency(model, instance):
-    """
-    plt.show a visual explanation using saliency for an image classification keras Model and a image instance with
-    matplotlib
 
-    :param model: keras model to explain
-    :param instance: model input image
-    """
+def explain_image_classifier_with_saliency(model, instance):
+    # instance = np.array(instance).astype(np.double)
+    # instance = np.expand_dims(instance, 0)
     instance = tf.convert_to_tensor(instance)
     instance = tf.cast(instance, tf.double)
 
@@ -112,14 +150,6 @@ def explain_image_classifier_with_saliency(model, instance):
 
 
 def explain_image_classifier_with_occlusion(model, instance, patch_size=8):
-    """
-    plt.show a visual explanation using saliency for an image classification keras Model and a image instance with
-    matplotlib
-
-    :param model: keras model to explain
-    :param instance: model input image
-    :param patch_size: size of gray patch to apply to measure occlusion
-    """
     # code adapted from https://gist.github.com/RaphaelMeudec/7985b0c5eb720a29021d52b0a0be549a
     # Create function to apply a grey patch on an image
     def apply_grey_patch(image, top_left_x, top_left_y, patch_size):
@@ -127,7 +157,7 @@ def explain_image_classifier_with_occlusion(model, instance, patch_size=8):
         patched_image[top_left_y:top_left_y + patch_size, top_left_x:top_left_x + patch_size, :] = tf.reduce_mean(image)
 
         return patched_image
-
+    
     img = instance[0]
 
     sensitivity_map = np.zeros((img.shape[0], img.shape[1]), dtype=float)
@@ -141,14 +171,13 @@ def explain_image_classifier_with_occlusion(model, instance, patch_size=8):
 
             # Save confidence for this specific patched image in map
             sensitivity_map[
-            top_left_y:top_left_y + patch_size,
-            top_left_x:top_left_x + patch_size,
+                top_left_y:top_left_y + patch_size,
+                top_left_x:top_left_x + patch_size,
             ] = confidence
-
+            
     plt.imshow(min_max_normalize_image(sensitivity_map), 'viridis')
     plt.show()
-    plt.imshow(min_max_normalize_image(
-        tf.cast(tf.expand_dims(min_max_normalize_image(sensitivity_map), -1), tf.float32) + tf.cast(img, tf.float32)))
+    plt.imshow(min_max_normalize_image(tf.cast(tf.expand_dims(min_max_normalize_image(sensitivity_map), -1), tf.float32) + tf.cast(img, tf.float32)))
     plt.show()
 
 
@@ -218,12 +247,6 @@ def to_shape(a, shape):
 
 
 def get_mask(model, image):
-    """
-    get the class occlusion masks from a LAX model for a batch of images
-
-    :param model: keras model with CAM/CLAM layers somewhere
-    :param image: input image (or batch)
-    """
     model = model.get_model()
     new_outputs = []
     d = -1
@@ -274,11 +297,8 @@ def color_squish(x):
     """
     squishes a tensor of (rows, columns, channels) to a tensor of (rows, columns, RGB (3)) using the color alphabet
     channels must be less than or equal to 26.
-
-    :param x: input image tensor
-    :return: RGB image with each of the channels of the input tensor assigned to a unique color
     """
-    # a couple candidate colors from the color alphabet
+    # a couple candidate colors
     colors = [(240, 163, 255), (0, 117, 220), (153, 63, 0), (76, 0, 92), (25, 25, 25), (0, 92, 49),
               (43, 206, 72), (255, 204, 153), (128, 128, 128), (148, 255, 181), (143, 124, 0), (157, 204, 0),
               (194, 0, 136), (0, 51, 128), (255, 164, 5), (255, 168, 187), (66, 102, 0), (255, 0, 16),
@@ -290,16 +310,17 @@ def color_squish(x):
     return np.array(tf.einsum('ijk,kl->ijl', x, colors)).astype(np.uint8), colors
 
 
-def show_mask(dset, num_images, model, class_names):
+def show_mask(dset, num_images, model, class_names, fname=''):
     """
-    show the composite mask, image, masked image figure for LAX networks
+    show the composite mask, image, masked image figure for thrifty cam networks
 
     :param dset: dataset from which to draw examples to explain
     :param num_images: number of images to draw
     :param model: modeldata for the model to explain
     :param class_names: list of class names (in order of their integer value)
+    :param fname:
     """
-
+    from PIL import Image
     values = []
     masks = []
     none = []
@@ -361,13 +382,13 @@ def show_mask(dset, num_images, model, class_names):
 
 def masking_evaluation(model, dset, class_names, n=1):
     """
-    display the best and worst cases for masking in terms of the occlusion objective for each batch until n examples
-    for each class have been gathered.
-
-    :param model: keras model
-    :param dset: dataset from which to draw batches
-    :param class_names: ordered list of class names
-    :param n: number of examples to show for each class
+    return the best and worst cases for masking
+    
+    I want:
+    - orthogonal cases (cosine similarity change)
+    - cases where the predicted probability is reduced the most
+    - colinear cases
+    - cases in which the predicted probability is reduced the least
     """
     
     values = []
@@ -392,7 +413,7 @@ def masking_evaluation(model, dset, class_names, n=1):
             output, probs = get_mask(model, x)
             probs = tf.squeeze(probs, 0)
             # collecting only the elements with the correct true class
-            there = tf.squeeze(tf.where(prob[:, cl_idx] > .1))
+            there = tf.squeeze(tf.where(prob[:, cl_idx] > .75))
             masked_all = tf.gather(masked_all, there)
             prob = tf.gather(prob, there)
             x = tf.gather(x, there)
@@ -521,3 +542,4 @@ def masking_evaluation(model, dset, class_names, n=1):
         labeled_multi_image([img, im, ima], len(to_label(label, normed)), row_labs=['overlay', 'mask', 'input image'],
                             col_labs=to_label(label, normed),
                             colors=colors, class_names=class_names)
+        

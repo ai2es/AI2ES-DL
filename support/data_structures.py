@@ -1,27 +1,22 @@
-"""
-Custom data structures to support model training, evaluation, and result storage
-"""
-
 import pickle
+import os
+from time import time
+import tensorflow as tf
 
 import numpy as np
 from dataclasses import dataclass
 
 from sklearn.metrics import confusion_matrix
 
+from support.util import dict_to_string, prep_gpu, augment_args, generate_fname
+
 
 @dataclass
 class ModelData:
     """
-    This object is meant to hold all of the data neccessary to reconstruct the model after training.
-
-    :param weights:  Neural network weights array (initially empty)
-    :param network_params:  Parameters passed to the network_fn to build the network stored in this object
-    :param network_fn:  Function that builds this network given the parameters (weights need not be initialized)
-    :param evaluations:  Dataset evaluation results (usually train, val, test metrics).  Initially empty.
-    :param classes:  Number of classes (for image classification)
-    :param history:  Training epoch history.  Metrics for each epoch of training.
-    :param run_time:  Run time of model training in seconds.
+    TODO: add
+    1. model training time
+    2. seed
     """
     weights: np.ndarray
     network_params: dict
@@ -58,11 +53,6 @@ class ModelData:
 
 @dataclass
 class ModelEvaluator:
-    """
-    Model Evaluator object used to select best hyperparameters.
-
-    :param models: a list of ModelData objects
-    """
     models: list
 
     def best_hyperparams(self, train_fraction=None, metric='loss', mode=min, split='val'):
@@ -94,12 +84,12 @@ class ModelEvaluator:
         return best
 
     def to_pickle(self, filename):
-        """pickle the object and save it to filename"""
+        # pickle the object
         with open(filename, 'wb') as fp:
             pickle.dump(self, fp)
 
     def unique_fractions(self):
-        """find the unique training fraction amounts"""
+        # find the unique training fraction amounts
         rax = set()
         for model in self.models:
             rax.add(model.train_fraction)
@@ -107,5 +97,4 @@ class ModelEvaluator:
         return rax
 
     def append(self, model: ModelData):
-        """append a model to the internal models list"""
         self.models.append(model)

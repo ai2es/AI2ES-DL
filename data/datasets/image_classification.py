@@ -1,16 +1,63 @@
-"""
-data loading functions must only return a dictionary of this form:
-{'train': train_dset, 'val': val_dset, 'test': test_dset, 'classes': list[ str]}
-where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
-"""
-
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
 import numpy as np
+import os
 
 from data.datasets.util import df_from_dirlist, to_dataset, report_df
 from PIL import Image
+
+"""
+data loading functions must only return a dictionary of this form:
+{'train': train_dset, 'val': val_dset, 'test': test_dset}
+where each _dset is a finite tf.data.Dataset object whose elements are single (unbatched) input-output pairs
+"""
+
+def imagenet(image_size=(128, 128, 3), **kwargs):
+    def process(input_image, label):
+        input_image = (tf.cast(input_image, tf.float32) - 127.5) / 128
+        label = tf.one_hot(label, 1000)
+        return input_image, label
+    
+    with open('/scratch/jroth/imagenet_classes_keras.txt', 'r') as fp:
+        train_lines = enumerate(fp.readlines())
+
+    class_map_train = {line.split(' ')[0]: i for i, line in train_lines}
+
+    
+    from keras.utils import dataset_utils
+    def file_order(d):
+        image_paths, labels, class_names = dataset_utils.index_directory(d, 'inferred', '.jpeg', shuffle=False)
+        return image_paths
+    
+    val_dataset = tf.keras.utils.image_dataset_from_directory(
+                                                '/scratch/jroth/2012/ILSVRC2012_val2',
+                                                labels=[class_map_train[path.split('/')[-2]] for path in file_order('/scratch/jroth/2012/ILSVRC2012_val2/')],
+                                                label_mode='int',
+                                                class_names=None,
+                                                color_mode='rgb',
+                                                batch_size=None,
+                                                image_size=(image_size[0], image_size[1]),
+                                                interpolation='bilinear',
+                                                shuffle=False
+                                                )
+    
+    train_dataset = tf.keras.utils.image_dataset_from_directory(
+                                                '/scratch/jroth/2012/ILSVRC2012_train/',
+                                                labels=[class_map_train[os.path.basename(path).split('_')[0]] for path in file_order('/scratch/jroth/2012/ILSVRC2012_train/')],
+                                                label_mode='int',
+                                                class_names=None,
+                                                color_mode='rgb',
+                                                batch_size=None,
+                                                image_size=(image_size[0], image_size[1]),
+                                                interpolation='bilinear',
+                                                shuffle=False
+                                                )
+
+    #train_dataset = train_dataset.map(process, num_parallel_calls=tf.data.AUTOTUNE)
+    #val_dataset = val_dataset.map(process, num_parallel_calls=tf.data.AUTOTUNE)
+    
+    return {'train': train_dataset, 'val': val_dataset, 'test': val_dataset, 'class_names': [str(i) for i in range(1000)]}
 
 
 def cats_dogs(batch_size=16, image_size=(128, 128, 3), cache=False, prefetch=4, **kwargs):

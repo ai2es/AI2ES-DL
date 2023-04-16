@@ -8,9 +8,8 @@ from tensorflow.keras.layers import Flatten, Conv2D, MaxPooling2D, Dense, Input,
     MultiHeadAttention, Add, BatchNormalization, LayerNormalization, Conv1D, Reshape, Cropping2D, ZeroPadding3D, \
     GlobalMaxPooling2D, GlobalAveragePooling2D, Lambda, Average, SeparableConv2D, DepthwiseConv2D, UpSampling2D, \
     Conv2DTranspose, AveragePooling2D, Multiply, Activation
-from trainable.custom_layers import TFPositionalEncoding2D
 
-from trainable.custom_layers import VLunchboxMHSA, QLunchboxMHSA, DarkLunchboxMHSA
+from trainable.custom_layers import VLunchboxMHSA, QLunchboxMHSA, DarkLunchboxMHSA, ConvNeXt_block, ConvNeXtV2_block, TFPositionalEncoding2D
 
 from time import time
 from trainable.activations import hardswish
@@ -175,6 +174,7 @@ def transformer_unet(conv_filters,
                      l2=None,
                      n_classes=10,
                      depth=3,
+                     dropout=0.0,
                      **kwargs):
     """
     LAX fully transformer U-net.  Higher spatial resolution layers use Focal Modulation blocks, lower resolutions
@@ -193,7 +193,7 @@ def transformer_unet(conv_filters,
 
     x = inputs
 
-    def custom_focal_module(input_shape, units, focal_depth):
+    def custom_focal_module(input_shape, units, focal_depth, dropout=0.0):
         """
         focal modulation block inspired by https://arxiv.org/pdf/2203.11926.pdf
         except in this version I make whatever changes I want to
@@ -252,7 +252,8 @@ def transformer_unet(conv_filters,
         z = MultiHeadAttention(heads,
                                key_dim,
                                value_dim,
-                               kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1, l2=l2)
+                               kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1, l2=l2),
+                               dropout=dropout,
                                )(z, z, z)
 
         z = Reshape((input_shape[1], input_shape[2], input_shape[-1]))(z)
@@ -281,7 +282,7 @@ def transformer_unet(conv_filters,
             x = custom_focal_module(x.shape[1:], max(inp.shape[-1] // 1.5, conv_filters), depth)(x)
         x = UpSampling2D(interpolation="bilinear")(x)
         x = Add()([x, skips.pop(-1)])
-    x = SpatialDropout2D(.1)(x)
+    x = SpatialDropout2D(dropout)(x)
     # semantic segmentation output with extra (irrelevant) channel
     cam = Dense(n_classes + 1, activation='softmax')(x)
     # reduce sum over width / height
@@ -502,6 +503,7 @@ def ConvNeXt_unet(conv_filters,
                   l2=None,
                   n_classes=10,
                   depth=3,
+                  dropout=0.0,
                   **kwargs):
 
     from trainable.custom_layers import ConvNeXt_block
@@ -510,12 +512,13 @@ def ConvNeXt_unet(conv_filters,
     skips = []
     for i in range(depth):
         x = ConvNeXt_block(conv_filters, l1, l2)(x)
-        skips.append(x)
+        skips.append(Dropout(dropout)(x))
         x = MaxPooling2D(2)(x)
         conv_filters *= 4 / 3
         conv_filters = int(conv_filters)
 
-    x = ConvNeXt_block(conv_filters)(x)
+    x = ConvNeXt_block(conv_filters, l1, l2)(x)
+    x = Dropout(dropout)(x)
 
     for i in range(depth):
         conv_filters *= 3 / 4

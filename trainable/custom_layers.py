@@ -5,12 +5,10 @@ Custom tensorflow / keras layer objects
 import tensorflow as tf
 import numpy as np
 from time import time
-from itertools import product
 
 from tensorflow.keras.layers import Flatten, Conv2D, Dense, Input, Concatenate, Dropout, \
     BatchNormalization, DepthwiseConv2D, GlobalAveragePooling2D, Multiply, LayerNormalization, Add, \
     UpSampling2D, Lambda
-from typing import Tuple
 
 from trainable.activations import hardswish
 
@@ -179,6 +177,84 @@ class PCACompress(tf.keras.layers.Layer):
 
     def get_config(self):
         return {"Q": self.Q.numpy()}
+    
+
+class ConvMask(tf.keras.layers.Layer):
+    """
+    Interpretable CNN masking layer that turns the previous convolutional layer into an interpretable convolution
+    https://arxiv.org/pdf/1710.00935.pdf
+    
+    At graph construction time this layer has two outputs one is the layer loss, the other is the forward pass output
+    """
+
+    def __init__(self, alpha=None, beta=4, tau=None):
+        super(ConvMask, self).__init__()
+        # layer hyperparameters
+        self.tau = tau
+        self.beta = beta
+        self.alpha = alpha
+        # set during build
+        self.w = None
+        self.h = None
+        self.ch = None
+        self.T = None
+        self.p_of_T = None
+
+    def build(self, input_shape):
+        # pre-compute the forward pass masks, going to make them untrainable variables
+        # need some way of converting the index to the masks
+        # input shape = (none, h, w, ch)
+        # only need the two inner dims to compute the number of masks there are h * w + 1 of them
+        batch, h, w, ch = input_shape
+        self.w = w
+        self.h = h
+        self.ch = ch
+        # parameter values from the paper
+        self.tau = self.tau if self.tau is not None else .5 / (w*h)
+        self.alpha = self.alpha if self.alpha is not None else w*h / (1 + w*h)
+        self.beta = self.beta if self.beta is not None else 4
+        
+        T = []
+        for i in range(h*w):
+            t_i = np.ones((h, w), dtype=np.float32)
+            for j in range(h):
+                for k in range(w):
+                    # if we index this way then it's j*h + k to get the correct map for T[j, k]
+                    t_i[j][k] -= self.beta * ((abs((i // h) - j) + abs(i % w - k)) / w)
+            T.append(self.tau * tf.maximum(t_i, -1))
+        
+        t_minus = -self.tau*tf.ones((h, w))
+        
+        T = [t_minus] + T
+        # stack each mask
+        self.T = tf.Variable(tf.stack(T, 0), trainable=False)
+        # stack the prior probabilities of each mask
+        self.p_of_T = tf.stack([1 - self.alpha] + [self.alpha / (w*h) for i in range(w*h)])
+
+    def call(self, inputs, training=None):
+        # going to do something a little hacky with the call where the layer is going to directly report the loss which will go directly to loss fn
+        # reshape the inputs to compute the correct mask for each filter
+        inputs_reshaped = tf.keras.layers.Reshape((self.w*self.h, self.ch))(inputs)
+        # simply apply the mask to each filter
+        output = Lambda(lambda x: tf.maximum(inputs * tf.transpose(tf.gather(self.T, tf.argmax(x, 1) + 1, axis=0, batch_dims=0), perm=(0, 2, 3, 1)), 0))(inputs_reshaped)
+        # the rest of the computation is the layer loss, which is the mutual information between the filters and the instances of the dataset
+        # we will estimate it over the batch
+        # nan possible, requires batch dimension
+        bcast_p_of_T = tf.broadcast_to(tf.expand_dims(self.p_of_T, axis=-1), (self.p_of_T.shape[0], self.ch))
+        p_of_x_given_T = tf.reduce_sum(tf.map_fn(lambda x: tf.stack([tf.expand_dims(self.T[0], -1) * x] + [tf.cast(tf.expand_dims(self.T[i + 1], -1) * x, tf.float32) for i in range(self.w*self.h)]), inputs), axis=(2, 3))
+        # softmax along batch axis
+        p_of_x_given_T = tf.nn.softmax(p_of_x_given_T, axis=0)
+
+        p_x = tf.reduce_sum(p_of_x_given_T * bcast_p_of_T, axis=1, keepdims=True)
+
+        loss = tf.reduce_sum(tf.reduce_sum(bcast_p_of_T, axis=0) * tf.reduce_sum(p_of_x_given_T, axis=0) * tf.reduce_sum(tf.math.log(p_of_x_given_T / p_x), axis=0), axis=(0, 1))
+        # loss is defined over the batch, so just repeat the loss for each element for tensorflow to have the correct expected output shape
+        loss = tf.broadcast_to(tf.expand_dims(tf.math.negative(loss), 0), tf.shape(tf.reduce_sum(inputs, axis=(1, 2, 3))))
+        
+        return output, loss
+
+    def get_config(self):
+        return {"T": self.T.numpy(), "alpha": self.alpha, "beta": self.beta, "tau": self.tau, "w": self.w, "h": self.h, "ch": self.ch}
 
 
 def focal_module(units, focal_depth):
@@ -366,6 +442,8 @@ def ConvNeXtV2_block(filters, l1=None, l2=None):
             'bias_regularizer': tf.keras.regularizers.L1L2(l1=l1, l2=l2),
             'padding': 'same'
         }
+        
+        x = Conv2D(filters, 1, **conv_params)(x)
 
         inputs = x
 
@@ -600,25 +678,6 @@ class VLunchboxMHSA(tf.keras.layers.Layer):
 
 
 class DarkLunchboxMHSA(tf.keras.layers.Layer):
-    """
-    Dot product self-attention where the Q table is a matrix of learnable
-    parameters, except in this version I make whatever modifications I want to.
-    We use the 'Lunchbox' metaphor within this layer where the
-    lunchbox is Q, and the savory lunchtime treats are the columns of Q.
-    Packing is intended to refer to a stage of transfer learning wherein the
-    weights that form Q are learned from an external task.  The lunchbox
-    is considered 'packed' after learning on the external task, and 'unpacked'
-    during training on the external task.  Call .pack() to freeze K, call
-    .unpack() to unfreeze them.
-
-    :param dim: embedding dimension for k, q, v
-    :param num_heads: number of attention heads
-    :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
-    :param qkv_bias: whether or not to use bias in the initial projection to dim
-    :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
-    :param proj_drop: dropout rate for output
-    :param prefix: name of this layer
-    """
     def __init__(self,
                  dim,
                  num_heads,
@@ -628,6 +687,25 @@ class DarkLunchboxMHSA(tf.keras.layers.Layer):
                  qk_scale=None,
                  proj_drop=0.,
                  prefix=''):
+        """
+        Dot product self-attention where the Q table is a matrix of learnable
+        parameters, except in this version I make whatever modifications I want to.
+        We use the 'Lunchbox' metaphor within this layer where the
+        lunchbox is Q, and the savory lunchtime treats are the columns of Q.
+        Packing is intended to refer to a stage of transfer learning wherein the
+        weights that form Q are learned from an external task.  The lunchbox
+        is considered 'packed' after learning on the external task, and 'unpacked'
+        during training on the external task.  Call .pack() to freeze K, call
+        .unpack() to unfreeze them.
+
+        :param dim: embedding dimension for k, q, v
+        :param num_heads: number of attention heads
+        :param packed: whether or not the lunchbox should be considered packed (True -> k is not trainable)
+        :param qkv_bias: whether or not to use bias in the initial projection to dim
+        :param qk scale: scale for rescaling as show in https://arxiv.org/abs/1706.03762, defaults to dim ** -0.5
+        :param proj_drop: dropout rate for output
+        :param prefix: name of this layer
+        """
         super().__init__()
         self.dim = dim
         self.num_heads = num_heads
@@ -709,21 +787,14 @@ class DarkLunchboxMHSA(tf.keras.layers.Layer):
 
 
 class IterativeMean(tf.keras.layers.Layer):
-    """
-    Computes estimate of the mean of the input tensor distribution for all positions in the input
-
-    :param batched: if True computes the mean of the dataset, if False computes the mean of the batched dataset,
-                    if False must provide batch_size
-    :type batched: bool
-    :param batch_size: batch size of batch mean
-    :type batch_size: int
-    :param max_iterations: maximum number of iterations for which to compute the mean
-    :type max_iterations: int
-    """
-
-    def __init__(self, batched: bool = True, batch_size: int = None, max_iterations: int = 1_000):
+    def __init__(self, batched=True, batch_size=None, max_iterations=1_000):
         """
-        Constructor method
+        Computes estimate of the mean of the input tensor distribution for all positions in the input
+
+        :param batched: if True computes the mean of the dataset, if False computes the mean of the batched dataset,
+                        if False must provide batch_size
+        :param batch_size: batch size of batch mean
+        :param max_iterations: maximum number of iterations for which to compute the mean
         """
         super().__init__()
         self.mean = None
@@ -732,60 +803,35 @@ class IterativeMean(tf.keras.layers.Layer):
         self.batch_size = batch_size
         self.max_iterations = max_iterations
 
-    def build(self, input_shape: Tuple[None, int, int, int]):
-        """
-        Build step of the keras model process.  After this function is run all of the variables must be defined.
-
-        :param input_shape: a tuple that defines the size of the input batch.  First dimension is None
-        :type input_shape: tuple[None, int, int, int]
-        """
+    def build(self, input_shape):
         if self.batched:
-            self.mean = tf.Variable(tf.zeros(input_shape[1:]), shape=input_shape[1:], trainable=False)
-            self.iteraton = tf.Variable(0.0, trainable=False)
+            self.mean = tf.Variable(tf.zeros(input_shape[1:]), shape=input_shape[1:], trainable=False, name='mu')
+            self.iteraton = tf.Variable(0.0, trainable=False, name='i')
         else:
-            self.mean = tf.Variable(tf.zeros((self.batch_size, *input_shape[1:])),
-                                    shape=(self.batch_size, *input_shape[1:]), trainable=False)
-            self.iteraton = tf.Variable(0.0, trainable=False)
+            self.mean = tf.Variable(tf.zeros((self.batch_size, *input_shape[1:])), shape=(self.batch_size, *input_shape[1:]), trainable=False, name='mu')
+            self.iteraton = tf.Variable(0.0, trainable=False, name='i')
 
-    def call(self, x: tf.Tensor, training: bool = None):
-        """
-        Similar to python's builtin __call__ for keras models.  Will be called for model forward passes.
-
-        :param x: Input tensor to this layer
-        :type x: tf.Tensor
-        :param training: Boolean parameter that defines whether or not the model is in training mode, default None
-        :type training: bool
-        :return: a tensor output of the layer (the mean estimate)
-        :rtype: tf.Tensor
-        """
-        if training:
-            if self.iteraton < self.max_iterations:
-                if self.batched:
-                    x = tf.reduce_mean(x, axis=0)
-                self.mean.assign_add((1.0 / (self.iteraton + 1.0)) * (x - self.mean))
-                self.iteraton.assign_add(1.0)
+    def call(self, x):
+        if self.iteraton < self.max_iterations:
+            if self.batched:
+                x = tf.reduce_mean(x, axis=0)
+            self.mean.assign_add((1.0 / (self.iteraton + 1.0)) * (x - self.mean))
+            self.iteraton.assign_add(1.0)
 
         return tf.expand_dims(self.mean, 0)
 
     def get_config(self):
-        """
-        Get the configuration of the layer, this includes all stateful attributes that are not weights
+        return {"iteration": self.iteraton, "mean": self.mean}
 
-        :return: a dictionary of attributes with state that are not tf.Variable
-        :rtype: dict
-        """
-        return {"iteration": self.iteraton, "batched": self.batched, "batch_size": self.batch_size,
-                "max_iterations": self.max_iterations}
-
-
+    
 class PartialFreeze(tf.keras.layers.Layer):
-    """
-    Partially freezes the layer by eliminating the gradients from certain layers achieved by multiplying outputs by zero.
-
-    :param axis: axis or axes along which to weight outputs by zero
-    :param cut: tuple (start, end) or tuple of tuples for each axis indicies to mask
-    """
     def __init__(self, axis=None, cut=None):
+        """
+        Partially freezes the layer by eliminating the gradients from certain layers achieved by multiplying outputs by zero.
+
+        :param axis: axis or axes along which to weight outputs by zero
+        :param cut: tuple (start, end) or tuple of tuples for each axis indicies to mask
+        """
         super().__init__()
         self.axis = axis
         self.cut = cut

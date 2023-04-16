@@ -1,7 +1,3 @@
-"""
-Utility functions for data loading and preprocessing.  Generally this module contains a miscellaneous
-group of functions, and is not meant to be used directly outside of the package.
-"""
 import os
 
 import pandas as pd

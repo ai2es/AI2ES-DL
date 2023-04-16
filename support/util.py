@@ -129,12 +129,8 @@ class Results:
         metrics = [key for key in self.model_data.history]
         patience = self.config.experiment_params['patience']
         epochs = len(self.model_data.history['loss'])
-        try:
-            performance_at_patience = {key: self.model_data.history[key][epochs - patience - 1]
-                                    for key in metrics}
-        except IndexError as e:
-            performance_at_patience = {key: self.model_data.history[key][-1]
-                                    for key in metrics}
+        performance_at_patience = {key: self.model_data.history[key][epochs - patience - 1]
+                                   for key in metrics}
 
         index = 'n/a' if self.experiment.index is None else self.experiment.index
         run_params = dict_to_string(dict(self.experiment.run_args)) if isinstance(self.experiment.run_args,
@@ -174,7 +170,7 @@ def augment_args(index, network_params):
     #  of experiments that we will be executing
     p = network_params['network_args']
     p['network_fn'] = network_params['network_fn']
-
+    # make the non-listed arguments into lists for product computation
     for key in p:
         if not isinstance(p[key], list):
             p[key] = [p[key]]
@@ -193,10 +189,10 @@ def augment_args(index, network_params):
 
     # Push the attributes to the args object and return a string that describes these structures
     augmented, arg_str = ji.set_attributes_by_index(index, network_params)
-
+    print(type(augmented))
     if network_params['hyperband']:
-        vars(augmented).update({key: p[key] for key in p['search_space']})
-        vars(augmented).update({'search_space': p['search_space']})
+        augmented.update({key: p[key] for key in p['search_space']})
+        augmented.update({'search_space': p['search_space']})
 
     augmented = {
         'network_fn': augmented['network_fn'],
@@ -222,8 +218,11 @@ def load_most_recent_results_with_fnames(d, n=1):
     for file in sorted(os.listdir(d), key=lambda f: os.stat(os.path.join(d, f)).st_mtime, reverse=True):
         if os.path.isfile(os.path.join(d, file)):
             with open(os.path.join(d, file), 'rb') as fp:
-                results.append(pickle.load(fp))
-                fnames.append(fp)
+                try:
+                    results.append(pickle.load(fp))
+                    fnames.append(fp)
+                except:
+                    pass
                 n -= 1
                 if not n:
                     break
@@ -247,7 +246,7 @@ def dict_to_string(d: dict, prefix="\t"):
             s += f"{prefix}{k}: {dict_to_string(d[k], newfix)}\n"
         else:
             s += f"{prefix}{k}: {d[k]}\n"
-    return s + prefix + "}"
+    return s + prefix + "\n}"
 
 
 def load_most_recent_results(d, n=1):
@@ -262,7 +261,10 @@ def load_most_recent_results(d, n=1):
     for file in sorted(os.listdir(d), key=lambda f: os.stat(os.path.join(d, f)).st_mtime, reverse=True):
         if os.path.isfile(os.path.join(d, file)):
             with open(os.path.join(d, file), 'rb') as fp:
-                results.append(pickle.load(fp))
+                try:
+                    results.append(pickle.load(fp))
+                except:
+                    pass
                 n -= 1
                 if not n:
                     break
@@ -365,30 +367,18 @@ def prep_gpu(cpus_per_task, gpus_per_task=0, wait=True):
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
         n_physical_devices = 0
     else:
-        try:
-            # gpu handles
-            gpus = [pynvml.nvmlDeviceGetHandleByIndex(i) for i in range(pynvml.nvmlDeviceGetCount())]
-            # -1 means "use every gpu"
-            gpus_per_task = gpus_per_task if gpus_per_task > -1 else len(gpus)
-            # get the fraction of used memory for each gpu
-            if wait:
-                sleep(randint(0, 60 * 5))
-            usage = [pynvml.nvmlDeviceGetMemoryInfo(gpu).used / pynvml.nvmlDeviceGetMemoryInfo(gpu).total for gpu in
-                     gpus]
-            # sort the gpus by their available memory and filter out all gpus with more than 10% used
-            avail = [i for i, v in sorted(list(enumerate(usage)), key=lambda k: k[-1], reverse=False) if v <= 1]
-            # if we cannot satisfy the requested number of gpus this is an error
-            if gpus_per_task > len(gpus):
-                raise ValueError("too many gpus requested for this machine")
-            # get the physical devices from tensorflow
-            physical_devices = tf.config.get_visible_devices('GPU')
-            # only take the number of gpus we plan to use
-            avail_physical_devices = [physical_devices[i] for i in avail][:gpus_per_task]
-            # set the visible devices only to the <gpus_per_task> least utilized
-            tf.config.set_visible_devices(avail_physical_devices, 'GPU')
-            n_physical_devices = len(avail_physical_devices)
-        except Exception as e:
-            warn(e)
+        # gpu handles
+        physical_devices = tf.config.get_visible_devices('GPU')
+        # -1 means "use every gpu"
+        gpus_per_task = gpus_per_task if gpus_per_task > -1 else len(physical_devices)
+        # if we cannot satisfy the requested number of gpus this is an error
+        if gpus_per_task > len(physical_devices):
+            raise ValueError("too many gpus requested for this machine")
+        # only take the number of gpus we plan to use
+        avail_physical_devices = physical_devices[:gpus_per_task]
+        # set the visible devices only to the <gpus_per_task> least utilized
+        tf.config.set_visible_devices(avail_physical_devices, 'GPU')
+        n_physical_devices = len(avail_physical_devices)
 
     # use the available cpus to set the parallelism level
     if cpus_per_task is not None:
@@ -503,6 +493,8 @@ class Experiment:
             train_dset = aug(train_dset)
         # train the model
         if self.network_params['hyperband']:
+            # TODO: use the hyperband keras tuner
+            keras_tuner.Hyperband()
             return self.optimization_params['training_loop'](model,
                                                              train_dset,
                                                              val_dset,
@@ -511,7 +503,7 @@ class Experiment:
                                                              self.optimization_params['callbacks'],
                                                              train_steps=self.params['steps_per_epoch'],
                                                              evaluate_on={'test': test_dset})
-
+        
         model_data = self.optimization_params['training_loop'](model, train_dset, val_dset, self.network_params,
                                                                self.params,
                                                                self.optimization_params['callbacks'],

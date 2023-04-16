@@ -1,16 +1,13 @@
-"""
-Single Sample Data Augmentation Methods.
-
-data augmentations functions must require only an input dataset and return only a
-tf.data.Dataset object representing the augmented dataset.  This module includes both
-dataset returning and helper functions.
-"""
-
 import math
 
 import tensorflow as tf
 import numpy as np
 from keras.layers.preprocessing import image_preprocessing as image_ops
+
+"""
+data augmentations functions must require only an input dataset and return only a 
+tf.data.Dataset object representing the augmented dataset
+"""
 
 
 def fftfreqnd(h, w):
@@ -52,15 +49,6 @@ def get_spectrum(freqs, decay_power, ch, h, w=0, z=0):
 
 
 def fout(x, y, alpha=.3, delta=3):
-    """
-    Equivalent to mixing an example from the dataset and the image of all zeros with FMix data augmentation strategy
-    function from https://arxiv.org/abs/2002.12047.  This is a just a helper function, it does not return a dataset.
-
-    :param x: Input image
-    :param y: label (one hot encoded)
-    :param delta: delta parameter from the FMix paper
-    :return: an augmented instance (x, y)
-    """
     shape = (x.shape[-3], x.shape[-2])
 
     freqs = fftfreqnd(*shape)
@@ -85,14 +73,6 @@ def fout(x, y, alpha=.3, delta=3):
 
 
 def foff_dset(train_dset, alpha=0.0625, delta=3.0, **kwargs):
-    """
-    Equivalent to mixing an example from the dataset and the image of all zeros with FMix data augmentation strategy
-    function from https://arxiv.org/abs/2002.12047
-
-    :param alpha: alpha parameter from the FMix paper
-    :param delta: delta parameter from the FMix paper
-    :return: an augmented dataset
-    """
     return train_dset.map(lambda x, y: tf.py_function(fout, inp=[x, y, tf.cast(alpha, tf.double),
                                                                  tf.cast(delta, tf.double)],
                                                       Tout=(tf.float32, tf.float32)),
@@ -136,7 +116,7 @@ def geometric_blend(x, x_1, alpha=1.0):
     x_1 = tf.pow(x_1, w_1)
 
     x = tf.math.multiply(x, x_1)
-    x = tf.pow(x, tf.cast(1.0 / tf.reduce_sum(weights), tf.float32))
+    x = tf.pow(x, tf.cast(1.0 / tf.reduce_sum(weights, 0), tf.float32))
 
     x = x - tf.reduce_mean(x)
     # return the convex combination
@@ -368,7 +348,6 @@ def transform(image: tf.Tensor, transforms) -> tf.Tensor:
 
 
 def identity(img, magnitude=None):
-    """The identity transformation"""
     return img
 
 
@@ -439,7 +418,6 @@ def rotate(image: tf.Tensor, range: float) -> tf.Tensor:
 
 
 def flip_ud(image: tf.Tensor, range: float) -> tf.Tensor:
-    """flips image up to down"""
     if np.random.uniform(0, 1, 1) < range:
         return tf.image.flip_up_down(image)
     else:
@@ -447,7 +425,6 @@ def flip_ud(image: tf.Tensor, range: float) -> tf.Tensor:
 
 
 def flip_lr(image: tf.Tensor, range: float) -> tf.Tensor:
-    """Flips image left to right"""
     if np.random.uniform(0, 1, 1) < range:
         return tf.image.flip_left_right(image)
     else:
@@ -456,16 +433,14 @@ def flip_lr(image: tf.Tensor, range: float) -> tf.Tensor:
 
 def custom_rand_augment(x, y, M=.2, N=1, alpha=1.0):
     """
-    Performs random augmentation with magnitude M for N iterations, then mixes it with the original image using either
-    the weighted or arithmetic mean.  The mean and weights for the mean are drawn at random from Dirichlet(alpha).  This
-    is just a helper function, it does not return a dataset.
+    performs random augmentation with magnitude M for N iterations
 
-    :param x: Input image
-    :param y: one hot encoded label
-    :param N: number of augmentations
-    :param M: magnitude \\in [0,1]
-    :param alpha: dirichlet parameter for the distribution of the mixing weights
-    :return: augmented image, label pair (x, y)
+    :param y:
+    :param x:
+    :param N:
+    :param M:
+    :param alpha:
+    :return: augmented image
     """
     blend_fns = [arithmetic_blend, geometric_blend]
     transforms = [identity, rotate, shear_x, shear_y, translate_x, translate_y, flip_lr]
@@ -473,50 +448,22 @@ def custom_rand_augment(x, y, M=.2, N=1, alpha=1.0):
     for op in np.random.choice(transforms, N):
         x_1 = op(x, np.random.uniform(0, M))
         for fn in np.random.choice(blend_fns, 1):
+            assert tf.math.reduce_all(tf.equal(tf.shape(x_1), tf.shape(x))), f'shapes do not match {tf.shape(x_1)}, {tf.shape(x)}'
             x = fn(x_1, x, alpha)
     return x, y
 
 
-def custom_rand_augment_dset(ds, M=.2, N=1, alpha=1.0):
-    """
-    Performs random augmentation with magnitude M for N iterations, then mixes it with the original image using either
-    the weighted or arithmetic mean.  The mean and weights for the mean are drawn at random from Dirichlet(alpha).
-
-    :param ds: dataset of batched examples to augment
-    :param N: number of augmentations
-    :param M: magnitude \\in [0,1]
-    :param alpha: dirichlet parameter for the distribution of the mixing weights
-    :return: augmented dataset
-    """
+def custom_rand_augment_dset(ds, M=.2, N=1):
     return ds.map(
-        lambda x, y: tf.py_function(custom_rand_augment, inp=[x, y, M, N, alpha], Tout=(tf.float32, tf.float32)),
+        lambda x, y: tf.py_function(custom_rand_augment, inp=[x, y, M, N], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
 
 
 def add_gaussian_noise(x, y, std=0.01):
-    """
-    Add gaussian noise to each pixel drawn from a normal distribution with standard deviation std and mean 0
-    This is just a helper function, it does not return a dataset.
-
-    :param x: Input image
-    :param y: one hot encoded label
-    :param std: standard deviation of gaussian noise to add to each pixel (mean is 0)
-
-    :return: augmented image, label pair (x, y)
-    """
     return x + tf.random.normal(shape=x.shape, mean=0.0, stddev=std, dtype=tf.float32, seed=42), tf.cast(y, tf.float32)
 
 
 def add_gaussian_noise_dset(ds, std=0.01):
-    """
-    Add gaussian noise to each pixel drawn from a normal distribution with standard deviation std and mean 0
-    This is just a helper function, it does not return a dataset.
-
-    :param ds: dataset of batched examples to augment
-    :param std: standard deviation of gaussian noise to add to each pixel (mean is 0)
-
-    :return: augmented dataset
-    """
     return ds.map(
         lambda x, y: tf.py_function(add_gaussian_noise, inp=[x, y, std], Tout=(tf.float32, tf.float32)),
         num_parallel_calls=tf.data.AUTOTUNE)
